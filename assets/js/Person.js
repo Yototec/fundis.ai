@@ -30,13 +30,46 @@ class Person {
     }
 
     speak(message) {
-        const maxWords = 20;
-        const words = message.split(' ');
-        if (words.length > maxWords) {
-            message = words.slice(0, maxWords).join(' ') + '...';
+        // Check if this is an analysis-related message
+        const isAnalysisMessage = message.includes('Analyzing') ||
+            message.includes('analysis') ||
+            this.isFetching ||
+            this.state === 'working';
+
+        // If it's an analysis message, use the actual message
+        if (isAnalysisMessage) {
+            const maxWords = 20;
+            const words = message.split(' ');
+            if (words.length > maxWords) {
+                message = words.slice(0, maxWords).join(' ') + '...';
+            }
+            this.message = message;
+            this.messageTime = 10;
+        } else {
+            // For non-analysis communication, use symbols/emojis instead
+            const symbolMessages = [
+                "📊 💹 🔍",
+                "📈 ⚡ 💻",
+                "🚀 ⭐ 📊",
+                "💯 📉 🔄",
+                "⚙️ 🔢 #@!",
+                "💻 🔮 📝",
+                "🧮 %$#@!",
+                "👀 💹 ⁉️",
+                "🤔 📊 ⁉️",
+                "🔍 👨‍💻 ⚡",
+                "⏱️ 📶 🔄",
+                "💸 ⤴️ 📱",
+                "📉 📈 ❓",
+                "💹 $¥£ ⁉️",
+                "📊 💻 ⚠️",
+                "🔢 🧠 ⭐"
+            ];
+
+            const randomSymbols = symbolMessages[Math.floor(Math.random() * symbolMessages.length)];
+            this.message = randomSymbols;
+            this.messageTime = 10;
         }
-        this.message = message;
-        this.messageTime = 10;
     }
 
     draw() {
@@ -677,7 +710,7 @@ class Person {
                         // Start working
                         this.state = 'working';
                         this.stateTime = 0;
-                        this.speak('Reviewing data');
+                        //this.speak('Reviewing data');
                         this.facingDirection = 'up';
                     } else if (rand < 0.7) {
                         // Random turning
@@ -686,16 +719,16 @@ class Person {
 
                         // Say something about looking around
                         const lookMessages = [
-                            "Checking the office",
-                            "Looking around",
-                            "Taking a moment",
-                            "Stretching a bit",
-                            `Monitoring ${this.ticker} signals`
+                            "👀 📊 🔍",
+                            "💫 🔄 ✨",
+                            "🧠 ⏱️ 💭",
+                            "💪 🔁 🌟",
+                            `${this.ticker} 📶 📊`
                         ];
                         this.speak(lookMessages[Math.floor(Math.random() * lookMessages.length)]);
                     } else {
                         // Virtual interaction - they speak as if talking to others, but don't move
-                        this.speak(`Hey everyone, what's the latest on ${this.ticker}?`);
+                        this.speak(`🔊 👋 ${this.ticker}?`);
 
                         // Set a timer for someone else to respond
                         setTimeout(() => {
@@ -703,7 +736,7 @@ class Person {
                             const responders = people.filter(p => p !== this && !p.isFetching);
                             if (responders.length > 0) {
                                 const responder = responders[Math.floor(Math.random() * responders.length)];
-                                responder.speak(`Looking strong, ${this.name}!`);
+                                responder.speak(`💪 📈 🌟!`);
                             }
                         }, 2000);
                     }
@@ -737,10 +770,10 @@ class Person {
 
         if (Math.random() < 0.3) {
             const stayMessages = [
-                "Focused on my analysis",
-                "Monitoring the markets",
-                "Staying at my station",
-                `Tracking ${this.ticker} updates`
+                "💻 📊 🔍",
+                "👀 📈 📉",
+                "🧠 💼 📍",
+                `${this.ticker} 🔄 ⚡`
             ];
             this.speak(stayMessages[Math.floor(Math.random() * stayMessages.length)]);
         }
@@ -749,17 +782,17 @@ class Person {
     // Override all movement methods to keep analysts at their desks
     goToTable() {
         // Stay at desk instead
-        this.speak("I should stay at my desk");
+        this.speak("💼 📍 🚫");
     }
 
     goToCoffee() {
         // Stay at desk instead
-        this.speak("Could use coffee, but I'll stay focused");
+        this.speak("☕ 💭 💻");
     }
 
     goToWindow() {
         // Stay at desk instead
-        this.speak("Better view of the data from here");
+        this.speak("👁️ 📊 💻");
     }
 
     goToDesk() {
@@ -776,17 +809,17 @@ class Person {
         const possiblePartners = people.filter(p => p !== this && !p.isFetching);
         if (possiblePartners.length > 0) {
             const partner = possiblePartners[Math.floor(Math.random() * possiblePartners.length)];
-            this.speak(`Hey ${partner.name}, how's your analysis going?`);
+            this.speak(`👋 ${partner.ticker} 📊?`);
 
             // Set a timer for them to respond
             setTimeout(() => {
                 if (!partner.isFetching) {
-                    partner.speak(`Going well, ${this.name}! Finding some interesting patterns.`);
+                    partner.speak(`👍 ${this.ticker}! 🔍 📈 ✨`);
                 }
             }, 1500);
         } else {
             // Just talk to the office in general
-            this.speak("Anyone seeing movement in the markets?");
+            this.speak("👥 👀 📈?");
         }
     }
 
