@@ -3,24 +3,6 @@ import * as PIXI from 'pixi.js';
 import './App.css';
 import { Game } from './components/Game';
 
-// We'll create components in separate files later
-const Garden = ({ width, height }: { width: number, height: number }) => {
-  return <Container />;
-};
-
-const OfficeSpace = ({ width, height }: { width: number, height: number }) => {
-  return <Container />;
-};
-
-const Employee = ({ name, startPosition, workstationPosition, texture }: { 
-  name: string, 
-  startPosition: [number, number], 
-  workstationPosition: [number, number], 
-  texture: string 
-}) => {
-  return <Container />;
-};
-
 function App() {
   const pixiContainer = useRef<HTMLDivElement>(null);
   const pixiApp = useRef<PIXI.Application | null>(null);
