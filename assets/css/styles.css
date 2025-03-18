@@ -1,0 +1,460 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+    background-color: #f5f7fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#main-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: #f0f2f5;
+}
+
+#left-panel {
+    width: 60%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background-color: #f0f2f5;
+}
+
+#right-panel {
+    width: 40%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f2f5;
+    position: relative;
+    box-shadow: none;
+}
+
+@media (max-width: 767px) {
+    #main-container {
+        flex-direction: column;
+        background-color: #f0f2f5;
+        position: relative;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    #right-panel {
+        width: 100%;
+        height: 40vh;
+        min-height: 200px;
+        order: 2;
+        overflow-y: auto;
+        background-color: #1e1e1e;
+        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        padding: 0;
+        z-index: 10;
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        position: relative;
+        transition: height 0.3s ease-in-out;
+    }
+
+    #left-panel {
+        width: 100%;
+        height: 60vh;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        order: 1;
+        background-color: #f0f2f5;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #terminalBox::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 5px;
+        background-color: #4a4a4a;
+        border-radius: 10px;
+        margin-top: 5px;
+    }
+
+    #terminalBox {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+        padding: 15px 10px 10px 10px;
+        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+        margin: 0;
+    }
+
+    #branding {
+        font-size: 1.2em;
+        margin: 10px 0 10px 0;
+        padding-bottom: 5px;
+    }
+
+    #left-panel::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 15px;
+        background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.1));
+        pointer-events: none;
+    }
+}
+
+@media (max-width: 767px) {
+    #terminalBottomBar {
+        padding-bottom: 30px;
+        margin-bottom: 10px;
+        position: relative;
+        bottom: 0;
+        width: 100%;
+        padding-bottom: 40px;
+        /* Increase padding to make room for the footer */
+    }
+
+    #connectBtn {
+        padding: 8px 15px;
+        font-size: 16px;
+        position: absolute;
+        /* Position the button absolutely */
+        right: 10px;
+        /* Keep it aligned to the right */
+        bottom: 15vh;
+        /* Position it above the footer */
+    }
+
+    #fetch-status {
+        max-width: 65%;
+        /* Ensure the status text doesn't overlap with the button */
+        margin-bottom: 10px;
+        /* Add some spacing below the status text */
+        position: absolute;
+        /* Position the status absolutely */
+        left: 10px;
+        /* Align to the left */
+        bottom: 15vh;
+        /* Match the button's vertical position */
+    }
+
+    #main-container {
+        margin-bottom: 30px;
+        /* Maintain space for the footer */
+    }
+
+    #terminalContent {
+        padding-bottom: 60px;
+        /* Add padding to ensure content doesn't get cut off by the button */
+    }
+}
+
+#officeCanvas {
+    border: 2px solid #333;
+    background-color: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    display: block;
+}
+
+@media (max-width: 767px) {
+    #officeCanvas {
+        height: 100%;
+        width: auto;
+        touch-action: pan-x;
+    }
+}
+
+#terminalBox {
+    width: 80%;
+    height: 600px;
+    background-color: #1e1e1e;
+    color: #0f0;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    position: relative;
+}
+
+@media (max-width: 767px) {
+    #terminalBox {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+        padding: 10px;
+        box-shadow: none;
+        margin: 0;
+    }
+}
+
+#terminalTopBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+#chain-info {
+    font-size: 14px;
+    color: #0f0;
+}
+
+#api-status-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.connected-dot {
+    background-color: #0f0;
+}
+
+.connecting-dot {
+    background-color: #ffcc00;
+}
+
+.disconnected-dot {
+    background-color: red;
+}
+
+#api-status-dot:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+#terminalContent {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+}
+
+#branding {
+    font-size: 2.0em;
+    font-weight: bold;
+    color: #0f0;
+    text-align: center;
+    margin: 10px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #0f0;
+}
+
+.terminal-instructions {
+    color: #0f0;
+    opacity: 0.8;
+    font-size: 0.9em;
+    text-align: center;
+    margin-top: 15px;
+}
+
+@media (max-width: 767px) {
+    #branding {
+        font-size: 1.5em;
+        margin: 5px 0 10px 0;
+        padding-bottom: 5px;
+    }
+}
+
+#terminalBottomBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#fetch-status {
+    color: #0f0;
+    font-size: 14px;
+    margin-right: 10px;
+    min-height: 18px;
+}
+
+#connectBtn {
+    display: none;
+}
+
+#debug-info {
+    display: none;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    max-width: 300px;
+    margin-top: 20px;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.blink {
+    animation: blink 1s infinite;
+}
+
+/* Mobile tab navigation */
+#mobile-tabs {
+    display: none;
+    width: 100%;
+    background-color: #1e1e1e;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tab-button {
+    width: 50%;
+    padding: 12px;
+    background-color: #1e1e1e;
+    color: #0f0;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.tab-button.active {
+    background-color: #2d2d2d;
+    box-shadow: inset 0 -3px 0 #0f0;
+}
+
+@media (max-width: 767px) {
+    #mobile-tabs {
+        display: flex;
+    }
+
+    #main-container {
+        flex-direction: column;
+        background-color: #f0f2f5;
+        position: relative;
+        height: 100vh;
+        overflow: hidden;
+        margin-top: 44px;
+        /* Height of the tabs */
+    }
+
+    #left-panel,
+    #right-panel {
+        width: 100%;
+        height: calc(100vh - 44px);
+        transition: transform 0.3s ease;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    /* Default state now shows terminal panel */
+    #left-panel {
+        transform: translateX(100%);
+    }
+
+    #right-panel {
+        transform: translateX(0);
+        background-color: #1e1e1e;
+    }
+
+    /* Office active class (reversed from before) */
+    body.office-active #left-panel {
+        transform: translateX(0);
+    }
+
+    body.office-active #right-panel {
+        transform: translateX(-100%);
+    }
+
+    #terminalBox {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        border-radius: 0;
+        padding: 10px;
+        box-shadow: none;
+        margin: 0;
+    }
+
+    /* Remove the drag handle as we're using tabs instead */
+    #terminalBox::before {
+        display: none;
+    }
+}
+
+/* Global Footer */
+#global-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f0f2f5;
+    /* Same as desktop background */
+    color: #000;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    font-family: monospace;
+    z-index: 1000;
+}
+
+@media (max-width: 767px) {
+    #global-footer {
+        padding: 6px 0;
+        font-size: 12px;
+        background-color: #f0f2f5;
+        /* Same as desktop background */
+        color: #000;
+    }
+
+    #main-container {
+        margin-bottom: 30px;
+        /* Make space for the footer */
+    }
+
+    #terminalBottomBar {
+        margin-bottom: 20px;
+        /* Increase bottom margin to prevent overlap with footer */
+    }
+}
+
+#chain-info a {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#chain-info a:hover {
+    color: #0f0;
+}
