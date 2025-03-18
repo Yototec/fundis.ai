@@ -78,6 +78,7 @@ let isTaskInProgress = false;
 
 // Add this near the top with other global variable declarations
 let combinedAnalysisResults = null;
+let analysisCompleted = false; // Track if the combined analysis is completed
 
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
@@ -187,19 +188,35 @@ function initOffice() {
         const clickX = Math.floor((e.clientX - rect.left) / GRID_SIZE);
         const clickY = Math.floor((e.clientY - rect.top) / GRID_SIZE);
 
+        let clickedOnAnalyst = false;
+        
+        // Check if clicked on an analyst
         for (const person of people) {
             if (person.x === clickX && person.y === clickY) {
-                const ticker = person.ticker.toLowerCase();
-                const full = reasoningData[ticker];
-                const terminalContent = document.getElementById('terminalContent');
-                if (terminalContent) {
-                    if (full) {
-                        terminalContent.textContent = `=== ${person.name} ===\n\n${full}\n`;
-                    } else {
-                        terminalContent.textContent = `=== ${person.name} ===\n\n...\n`;
+                clickedOnAnalyst = true;
+                
+                // Only show analyst data if analysis is completed
+                if (analysisCompleted) {
+                    const ticker = person.ticker.toLowerCase();
+                    const full = reasoningData[ticker];
+                    const terminalContent = document.getElementById('terminalContent');
+                    if (terminalContent) {
+                        if (full) {
+                            terminalContent.innerHTML = `<strong>=== ${person.name} Analysis ===</strong>\n\n${full}\n`;
+                        } else {
+                            terminalContent.innerHTML = `<strong>=== ${person.name} Analysis ===</strong>\n\n<em>No data available</em>\n`;
+                        }
                     }
                 }
                 break;
+            }
+        }
+        
+        // If clicked elsewhere and we have combined results, show them
+        if (!clickedOnAnalyst && combinedAnalysisResults && analysisCompleted) {
+            const terminalContent = document.getElementById('terminalContent');
+            if (terminalContent) {
+                terminalContent.innerHTML = combinedAnalysisResults;
             }
         }
     });
@@ -1457,6 +1474,9 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                 formattedResults = formatAnalystData(agentResults);
             }
 
+            // Store results in reasoningData for individual analyst access
+            reasoningData[analyst.ticker.toLowerCase()] = formattedResults;
+
             // Store results in the combined results
             if (window.combinedAnalysisResults) {
                 window.combinedAnalysisResults += '\n\n';
@@ -1585,6 +1605,7 @@ function disconnectFromApi() {
         fetchQueue = [];
         isTaskInProgress = false;
         combinedAnalysisResults = null;
+        analysisCompleted = false; // Reset the analysis completion flag
         
         for (const p of people) {
             p.isFetching = false;
@@ -2505,6 +2526,9 @@ function performCombinedAnalysis(symbol, apiKey) {
             combinedAnalysisResults = `<strong>=== FINAL COLLABORATIVE ANALYSIS ===</strong>\n\n`;
             combinedAnalysisResults += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] Analysis integration complete!</span>\n\n`;
             combinedAnalysisResults += formattedResults;
+            
+            // Set the flag to indicate analysis is complete
+            analysisCompleted = true;
             
             // Add to the terminal
             if (terminalContent) {
