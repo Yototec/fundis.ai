@@ -32,10 +32,10 @@ const COLORS = {
     screen: '#87CEEB',
     skin: '#FFD700',
     body: '#2c3e50',
-    btcUniform: '#F7931A',
-    ethUniform: '#627EEA',
-    solUniform: '#00FFA3',
-    dogeUniform: '#C3A634',
+    eventUniform: '#F7931A',
+    sentimentUniform: '#627EEA',
+    marketUniform: '#00FFA3',
+    quantUniform: '#C3A634',
     window: '#add8e6',
     sky: '#87CEEB',
     cloud: '#ffffff'
@@ -49,10 +49,10 @@ let lastFetchTime = 0;
 let currentFetchingTicker = null;
 let fetchQueue = [];
 let reasoningData = {
-    btc: null,
-    eth: null,
-    sol: null,
-    doge: null
+    event: null,
+    sentiment: null,
+    market: null,
+    quant: null
 };
 
 const DEBUG = true;
@@ -115,10 +115,10 @@ function initOffice() {
         office[ROWS - 1][x] = OBJECTS.WALL;
     }
 
-    createWorkstation(6, 5);          // BTC
-    createWorkstation(6, 15);         // ETH
-    createWorkstation(COLS - 10, 5);    // SOL
-    createWorkstation(COLS - 10, 15);   // DOGE
+    createWorkstation(6, 5);          // Event
+    createWorkstation(6, 15);         // Sentiment
+    createWorkstation(COLS - 10, 5);    // Market
+    createWorkstation(COLS - 10, 15);   // Quant
 
     // Create a rectangular table in the middle of the office
     const tableWidth = 4;
@@ -141,17 +141,17 @@ function initOffice() {
     office[coffeeY + 1][coffeeX + 1] = OBJECTS.COFFEE;
 
     const deskPositions = {
-        btc: { x: 6, y: 6 },
-        eth: { x: 6, y: 16 },
-        sol: { x: COLS - 10, y: 6 },
-        doge: { x: COLS - 10, y: 16 }
+        event: { x: 6, y: 6 },
+        sentiment: { x: 6, y: 16 },
+        market: { x: COLS - 10, y: 6 },
+        quant: { x: COLS - 10, y: 16 }
     };
 
     people = [
-        new Person(deskPositions.btc.x, deskPositions.btc.y, 'Analyst Biton', 'btc'),
-        new Person(deskPositions.eth.x, deskPositions.eth.y, 'Analyst Ethan', 'eth'),
-        new Person(deskPositions.sol.x, deskPositions.sol.y, 'Analyst Solar', 'sol'),
-        new Person(deskPositions.doge.x, deskPositions.doge.y, 'Analyst Dodge', 'doge')
+        new Person(deskPositions.event.x, deskPositions.event.y, 'Event Analyst', 'event'),
+        new Person(deskPositions.sentiment.x, deskPositions.sentiment.y, 'Sentiment Analyst', 'sentiment'),
+        new Person(deskPositions.market.x, deskPositions.market.y, 'Market Analyst', 'market'),
+        new Person(deskPositions.quant.x, deskPositions.quant.y, 'Quant Analyst', 'quant')
     ];
 
     // Add tab switching functionality for mobile
@@ -234,10 +234,10 @@ function isWalkable(x, y) {
 
 function findDeskForTicker(ticker) {
     const deskPositions = {
-        btc: { x: 6, y: 6 },
-        eth: { x: 6, y: 16 },
-        sol: { x: COLS - 10, y: 6 },
-        doge: { x: COLS - 10, y: 16 }
+        event: { x: 6, y: 6 },
+        sentiment: { x: 6, y: 16 },
+        market: { x: COLS - 10, y: 6 },
+        quant: { x: COLS - 10, y: 16 }
     };
     if (deskPositions[ticker.toLowerCase()]) {
         return deskPositions[ticker.toLowerCase()];
@@ -685,15 +685,15 @@ function drawOffice() {
                     const deskX = Math.floor(cellX / GRID_SIZE);
                     const deskY = Math.floor(cellY / GRID_SIZE);
 
-                    if (deskX < COLS / 2 && deskY < ROWS / 2) ticker = 'btc';
-                    else if (deskX < COLS / 2) ticker = 'eth';
-                    else if (deskY < ROWS / 2) ticker = 'sol';
-                    else ticker = 'doge';
+                    if (deskX < COLS / 2 && deskY < ROWS / 2) ticker = 'event';
+                    else if (deskX < COLS / 2) ticker = 'sentiment';
+                    else if (deskY < ROWS / 2) ticker = 'market';
+                    else ticker = 'quant';
 
                     // Chart data based on ticker
-                    const chartColor = ticker === 'btc' ? '#F7931A' :
-                        ticker === 'eth' ? '#627EEA' :
-                            ticker === 'sol' ? '#00FFA3' : '#C3A634';
+                    const chartColor = ticker === 'event' ? '#F7931A' :
+                        ticker === 'sentiment' ? '#627EEA' :
+                            ticker === 'market' ? '#00FFA3' : '#C3A634';
 
                     // Draw screen content - price chart
                     ctx.strokeStyle = chartColor;
@@ -703,9 +703,9 @@ function drawOffice() {
 
                     // Create a price chart specific to the ticker
                     const points = 8;
-                    const volatility = ticker === 'btc' ? 0.05 :
-                        ticker === 'eth' ? 0.07 :
-                            ticker === 'sol' ? 0.09 : 0.11;
+                    const volatility = ticker === 'event' ? 0.05 :
+                        ticker === 'sentiment' ? 0.07 :
+                            ticker === 'market' ? 0.09 : 0.11;
 
                     // Generate the chart line
                     let prevY = cellY + GRID_SIZE * (0.32 - Math.random() * 0.1);
@@ -1168,7 +1168,7 @@ function connectToApi() {
         debugLog("API Connected - Assigning immediate task");
 
         // Select a random analyst and start them working immediately
-        const tickers = ['btc', 'eth', 'sol', 'doge'];
+        const tickers = ['event', 'sentiment', 'market', 'quant'];
         const randomTicker = tickers[Math.floor(Math.random() * tickers.length)];
         const randomAnalyst = people.find(p => p.ticker.toLowerCase() === randomTicker);
 
@@ -1269,7 +1269,7 @@ function queueReasoningFetches(hasNewData) {
     }
     currentFetchingTicker = null;
 
-    const tickers = ['btc', 'eth', 'sol', 'doge'];
+    const tickers = ['event', 'sentiment', 'market', 'quant'];
     const shuffledTickers = [...tickers].sort(() => Math.random() - 0.5);
 
     shuffledTickers.forEach(ticker => {
@@ -1685,19 +1685,19 @@ start();
 setupMobileScrolling();
 
 // Immediately assign different starting activities to each person
-people[0].wander(); // BTC analyst takes a walk
+people[0].wander(); // Event analyst takes a walk
 people[0].state = 'walking';
 people[0].speak('Taking a walk');
 
-people[1].goToCoffee(); // ETH analyst gets coffee
+people[1].goToCoffee(); // Sentiment analyst gets coffee
 people[1].state = 'walking';
 people[1].speak('Need some coffee to stay focused');
 
-people[2].goToTable(); // SOL analyst goes to the table
+people[2].goToTable(); // Market analyst goes to the table
 people[2].state = 'walking';
 people[2].speak('Going to take a break at the table');
 
-people[3].goToWindow(); // DOGE analyst goes to the window
+people[3].goToWindow(); // Quant analyst goes to the window
 people[3].state = 'walking';
 people[3].speak('Going to get some fresh air');
 

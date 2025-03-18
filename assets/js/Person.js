@@ -351,12 +351,12 @@ class Person {
             4
         );
 
-        // Add ticker symbol on side of uniform
-        ctx.font = '10px Arial';
+        // Add ticker symbol on side of uniform (first letter only)
+        ctx.font = '12px Arial';
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText(
-            this.ticker,
+            this.ticker.charAt(0).toUpperCase(),
             x,
             y
         );
@@ -462,8 +462,8 @@ class Person {
         ctx.translate(x, y);
 
         switch (ticker.toLowerCase()) {
-            case 'btc':
-                // Bitcoin logo
+            case 'event':
+                // Event Analyst logo
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, logoSize / 2, 0, Math.PI * 2);
@@ -473,11 +473,11 @@ class Person {
                 ctx.font = `bold ${logoSize * 0.8}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('₿', 0, 0);
+                ctx.fillText('E', 0, 0);
                 break;
 
-            case 'eth':
-                // Ethereum logo
+            case 'sentiment':
+                // Sentiment Analyst logo
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, logoSize / 2, 0, Math.PI * 2);
@@ -487,11 +487,11 @@ class Person {
                 ctx.font = `bold ${logoSize * 0.8}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('Ξ', 0, 0);
+                ctx.fillText('S', 0, 0);
                 break;
 
-            case 'sol':
-                // Solana logo
+            case 'market':
+                // Market Analyst logo
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, logoSize / 2, 0, Math.PI * 2);
@@ -501,11 +501,11 @@ class Person {
                 ctx.font = `bold ${logoSize * 0.5}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('SOL', 0, 0);
+                ctx.fillText('M', 0, 0);
                 break;
 
-            case 'doge':
-                // Dogecoin logo
+            case 'quant':
+                // Quant Analyst logo
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, logoSize / 2, 0, Math.PI * 2);
@@ -515,20 +515,16 @@ class Person {
                 ctx.font = `bold ${logoSize * 0.4}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('DOGE', 0, -2);
+                ctx.fillText('Q', 0, -2);
 
-                // Simple dog ears
+                // Simple graph symbol instead of dog ears
                 ctx.beginPath();
-                ctx.moveTo(-logoSize / 4, -logoSize / 3);
-                ctx.lineTo(-logoSize / 2, -logoSize / 2);
-                ctx.lineTo(-logoSize / 5, -logoSize / 5);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.moveTo(logoSize / 4, -logoSize / 3);
-                ctx.lineTo(logoSize / 2, -logoSize / 2);
-                ctx.lineTo(logoSize / 5, -logoSize / 5);
-                ctx.fill();
+                ctx.moveTo(-logoSize / 4, 0);
+                ctx.lineTo(-logoSize / 6, -logoSize / 8);
+                ctx.lineTo(0, 0);
+                ctx.lineTo(logoSize / 6, -logoSize / 6);
+                ctx.lineTo(logoSize / 4, -logoSize / 12);
+                ctx.stroke();
                 break;
         }
 
@@ -538,10 +534,10 @@ class Person {
     // Helper method to draw hair based on character
     drawHair(x, y, view) {
         const hairColors = {
-            btc: '#8B4513', // brown hair for Bitcoin
-            eth: '#000000', // black hair for Ethereum
-            sol: '#FFD700', // blonde hair for Solana
-            doge: '#A0522D'  // auburn hair for Doge
+            event: '#8B4513', // brown hair for Event Analyst
+            sentiment: '#000000', // black hair for Sentiment Analyst
+            market: '#FFD700', // blonde hair for Market Analyst
+            quant: '#A0522D'  // auburn hair for Quant Analyst
         };
 
         ctx.fillStyle = hairColors[this.ticker.toLowerCase()];
@@ -553,26 +549,26 @@ class Person {
             ctx.fill();
 
             // Add hair tufts based on character
-            if (this.ticker.toLowerCase() === 'btc') {
+            if (this.ticker.toLowerCase() === 'event') {
                 // Short business-like hair
                 ctx.beginPath();
                 ctx.moveTo(x - this.headSize / 2, y - this.headSize / 3);
                 ctx.quadraticCurveTo(x - this.headSize / 4, y - this.headSize / 2, x, y - this.headSize / 2);
                 ctx.quadraticCurveTo(x + this.headSize / 4, y - this.headSize / 2, x + this.headSize / 2, y - this.headSize / 3);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'eth') {
+            } else if (this.ticker.toLowerCase() === 'sentiment') {
                 // Modern tech look
                 ctx.beginPath();
                 ctx.moveTo(x - this.headSize / 2, y - this.headSize / 4);
                 ctx.quadraticCurveTo(x, y - this.headSize, x + this.headSize / 2, y - this.headSize / 4);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'sol') {
+            } else if (this.ticker.toLowerCase() === 'market') {
                 // Trendy hairstyle
                 ctx.beginPath();
                 ctx.moveTo(x - this.headSize / 2, y - this.headSize / 3);
                 ctx.quadraticCurveTo(x, y - this.headSize * 0.9, x + this.headSize / 2, y - this.headSize / 3);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'doge') {
+            } else if (this.ticker.toLowerCase() === 'quant') {
                 // Fun, playful hair
                 ctx.beginPath();
                 for (let i = -3; i <= 3; i++) {
@@ -589,7 +585,7 @@ class Person {
             ctx.fill();
 
             // Add character-specific back hair
-            if (this.ticker.toLowerCase() === 'eth' || this.ticker.toLowerCase() === 'sol') {
+            if (this.ticker.toLowerCase() === 'sentiment' || this.ticker.toLowerCase() === 'market') {
                 // Longer hair in back for some characters
                 ctx.beginPath();
                 ctx.moveTo(x - this.headSize / 2, y);
@@ -606,24 +602,24 @@ class Person {
             ctx.fill();
 
             // Character specific side hair
-            if (this.ticker.toLowerCase() === 'btc') {
+            if (this.ticker.toLowerCase() === 'event') {
                 // Short business cut
                 ctx.beginPath();
                 ctx.arc(x, y - this.headSize / 4, this.headSize / 2, Math.PI * 1.1, Math.PI * 1.9);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'eth') {
+            } else if (this.ticker.toLowerCase() === 'sentiment') {
                 // Modern tech look
                 ctx.beginPath();
                 ctx.moveTo(x - direction * this.headSize / 4, y - this.headSize / 2);
                 ctx.quadraticCurveTo(x, y - this.headSize * 0.8, x + direction * this.headSize / 3, y - this.headSize / 4);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'sol') {
+            } else if (this.ticker.toLowerCase() === 'market') {
                 // Trendy hairstyle
                 ctx.beginPath();
                 ctx.moveTo(x - direction * this.headSize / 4, y - this.headSize / 2);
                 ctx.quadraticCurveTo(x, y - this.headSize * 0.9, x + direction * this.headSize / 4, y - this.headSize / 2);
                 ctx.fill();
-            } else if (this.ticker.toLowerCase() === 'doge') {
+            } else if (this.ticker.toLowerCase() === 'quant') {
                 // Fun, playful hair
                 ctx.beginPath();
                 for (let i = -1; i <= 1; i++) {
@@ -981,7 +977,7 @@ class Person {
             partner.stateTime = 0;
             partner.interactionPartner = this.name;
 
-            const cryptoInteractions = [
+            const marketInteractions = [
                 "Market looks volatile today",
                 "Have you seen the latest trend?",
                 "Bullish or bearish?",
@@ -989,17 +985,17 @@ class Person {
                 "Support levels are holding"
             ];
             const tickerComments = {
-                btc: ["Bitcoin's dominance is strong", "Hash rate is increasing", "On-chain metrics look positive"],
-                eth: ["ETH gas fees are dropping", "Smart contract activity is up", "Layer 2 adoption growing"],
-                sol: ["Solana TPS hitting new highs", "DeFi on SOL expanding", "Low latency is key"],
-                doge: ["Meme coins gaining traction", "Community engagement is high", "Social metrics moving"]
+                event: ["Major event upcoming", "News cycle is busy", "Event-driven metrics look positive"],
+                sentiment: ["Social sentiment is rising", "Community activity is up", "Sentiment indicators growing"],
+                market: ["Market indicators are strong", "Technical analysis shows support", "Price action is interesting"],
+                quant: ["Quantitative models performing well", "Statistical significance achieved", "Algorithms detecting patterns"]
             };
 
             if (Math.random() < 0.5) {
-                this.speak(cryptoInteractions[Math.floor(Math.random() * cryptoInteractions.length)]);
+                this.speak(marketInteractions[Math.floor(Math.random() * marketInteractions.length)]);
                 setTimeout(() => {
                     if (partner.state === 'talking' && partner.interactionPartner === this.name && !partner.isFetching) {
-                        partner.speak(cryptoInteractions[Math.floor(Math.random() * cryptoInteractions.length)]);
+                        partner.speak(marketInteractions[Math.floor(Math.random() * marketInteractions.length)]);
                     }
                 }, 1000);
             } else {
