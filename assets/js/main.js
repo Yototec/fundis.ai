@@ -1634,13 +1634,7 @@ function disconnectFromApi() {
             }
         }
 
-        // Reset the connect button text
-        const connectBtn = document.getElementById('connectBtn');
-        if (connectBtn) {
-            connectBtn.textContent = 'Connect';
-        }
-
-        // Reset API form
+        // Reset the API form
         updateTerminalDisplay();
 
         debugLog("API Disconnected");
@@ -2230,7 +2224,6 @@ document.getElementById('api-status-dot').addEventListener('click', () => {
 // Add event listener for the API key input to allow pressing Enter to connect
 document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKey');
-    const connectBtn = document.getElementById('connectBtn');
     const endBlockInput = document.getElementById('endBlock');
 
     // Add validation for endBlock input
@@ -2267,26 +2260,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (apiKey) {
                     updateConnectionStatus('connecting');
                     connectToApi();
-                } else {
-                    updateSyncStatus("Error: API Key is required");
-                }
-            }
-        });
-    }
-
-    // Make Connect button visible and add event listener
-    if (connectBtn) {
-        connectBtn.style.display = 'block';
-        connectBtn.addEventListener('click', () => {
-            if (apiConnected) {
-                disconnectFromApi();
-                connectBtn.textContent = 'Connect';
-            } else {
-                const apiKey = document.getElementById('apiKey').value;
-                if (apiKey) {
-                    updateConnectionStatus('connecting');
-                    connectToApi();
-                    connectBtn.textContent = 'Disconnect';
                 } else {
                     updateSyncStatus("Error: API Key is required");
                 }
