@@ -646,6 +646,16 @@ class Person {
         this.reasoningText = '';
     }
 
+    // Add new method for collaborative analysis
+    startCollaborativeAnalysis() {
+        debugLog(`${this.name} joining collaborative analysis`);
+        this.isFetching = true;
+        this.speak("Let's put together our analysis!");
+        this.facingDirection = 'down'; // Face toward center
+        this.state = 'working';
+        // Don't update sync status here, as the main function handles this
+    }
+
     displayReasoning(reasoning) {
         debugLog(`${this.name} displaying reasoning`);
         this.speak("Analysis complete");

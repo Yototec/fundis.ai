@@ -76,6 +76,9 @@ let taskScheduleTimer;
 let taskInterval = 10000;
 let isTaskInProgress = false;
 
+// Add this near the top with other global variable declarations
+let combinedAnalysisResults = null;
+
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
     const gridHeightPx = ROWS * GRID_SIZE;
@@ -1250,7 +1253,12 @@ function connectToApi() {
                                             selectedSymbol,
                                             apiKey,
                                             'initial_quant_analysis',
-                                            'quants'
+                                            'quants',
+                                            () => {
+                                                // After all analysts have completed their individual analyses
+                                                // Start the combined analysis
+                                                performCombinedAnalysis(selectedSymbol, apiKey);
+                                            }
                                         );
                                     }
                                 );
@@ -1576,6 +1584,8 @@ function disconnectFromApi() {
         currentFetchingTicker = null;
         fetchQueue = [];
         isTaskInProgress = false;
+        combinedAnalysisResults = null;
+        
         for (const p of people) {
             p.isFetching = false;
 
@@ -1898,6 +1908,12 @@ function updateTerminalDisplay() {
             }
             return;
         }
+    }
+
+    // If we have combined analysis results, show them
+    if (combinedAnalysisResults) {
+        terminalContent.innerHTML = combinedAnalysisResults;
+        return;
     }
 
     // If not connected, show the API form
@@ -2422,4 +2438,110 @@ if (Person.prototype.goToDesk) {
             this.speak("💻 📊 !");
         }
     };
+}
+
+// Add this new function after fetchDataFromApi function
+// Function to perform combined analysis after all individual analyses
+function performCombinedAnalysis(symbol, apiKey) {
+    debugLog("Starting combined analysis");
+    updateSyncStatus("All analysts are putting together their analysis...");
+    
+    // Have all analysts speak the same message and prepare for collaboration
+    for (const person of people) {
+        person.startCollaborativeAnalysis();
+    }
+    
+    // Update terminal to show combined analysis is starting
+    const terminalContent = document.getElementById('terminalContent');
+    if (terminalContent) {
+        terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">All analysts are collaborating on the final BTC analysis...</div>
+<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Gathering comprehensive insights across all analysis dimensions...</div>`;
+        
+        if (window.combinedAnalysisResults) {
+            terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+        }
+    }
+    
+    // Make the two API calls in parallel
+    const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=0&chunk_end=199&api_key=${apiKey}`;
+    const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=0&chunk_end=199&api_key=${apiKey}`;
+    
+    // Show progress in terminal
+    updateSyncStatus("Fetching comprehensive observation data...");
+    
+    // First fetch the observation data
+    fetchDataFromApi(observationUrl, symbol, 0, 199)
+        .then(observationResult => {
+            updateSyncStatus("Fetching strategic consideration data...");
+            
+            // Then fetch the consideration data
+            return fetchDataFromApi(considerationUrl, symbol, 0, 199)
+                .then(considerationResult => {
+                    return { observation: observationResult, consideration: considerationResult };
+                });
+        })
+        .then(results => {
+            // Format and display the combined results
+            debugLog("Combined analysis complete");
+            updateSyncStatus("Combined analysis completed successfully!");
+            
+            // Format the results nicely
+            let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS ===</strong>\n\n`;
+            
+            if (results.observation) {
+                formattedResults += `<strong>Market Observations (Blocks 0-199):</strong>\n${formatAnalystData(results.observation)}\n\n`;
+            } else {
+                formattedResults += `<strong>Market Observations:</strong> No data available\n\n`;
+            }
+            
+            if (results.consideration) {
+                formattedResults += `<strong>Strategic Considerations (Blocks 0-199):</strong>\n${formatAnalystData(results.consideration)}`;
+            } else {
+                formattedResults += `<strong>Strategic Considerations:</strong> No data available`;
+            }
+            
+            // Store the formatted results in the global variable
+            combinedAnalysisResults = `<strong>=== FINAL COLLABORATIVE ANALYSIS ===</strong>\n\n`;
+            combinedAnalysisResults += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] Analysis integration complete!</span>\n\n`;
+            combinedAnalysisResults += formattedResults;
+            
+            // Add to the terminal
+            if (terminalContent) {
+                terminalContent.innerHTML = combinedAnalysisResults;
+            }
+            
+            // Add to terminal history
+            addToTerminalHistory("All analysts completed comprehensive BTC analysis");
+            
+            // Have all analysts celebrate success
+            for (const person of people) {
+                person.isFetching = false;
+                person.state = 'idle';
+                if (Math.random() > 0.5) {
+                    person.speak("📊 💹 🚀");
+                } else {
+                    person.speak("📈 💯 ⭐");
+                }
+            }
+            
+            // Reset task status
+            isTaskInProgress = false;
+            scheduleNextTask();
+        })
+        .catch(error => {
+            console.error("Error during combined analysis:", error);
+            updateSyncStatus("Error during combined analysis: " + error.message);
+            
+            // Handle error - reset analyst states
+            for (const person of people) {
+                person.isFetching = false;
+                person.state = 'idle';
+                person.speak("❌ 📊 ❓");
+            }
+            
+            // Reset task status
+            isTaskInProgress = false;
+            scheduleNextTask();
+        });
 }
