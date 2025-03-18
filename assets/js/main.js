@@ -1149,23 +1149,29 @@ function animate() {
 
 function connectToApi() {
     if (!apiConnected) {
+        // Get API key and symbol from form
+        const apiKey = document.getElementById('apiKey').value;
+        const selectedSymbol = document.getElementById('symbolSelect').value;
+
+        if (!apiKey) {
+            updateSyncStatus("Error: API Key is required");
+            return;
+        }
+
+        debugLog(`Connecting with API key and symbol: ${selectedSymbol}`);
+
         apiConnected = true;
         updateConnectionStatus(true);
 
         // Update terminal content to show analysts are in action
         const terminalContent = document.getElementById('terminalContent');
         if (terminalContent) {
-            const instructionsDiv = terminalContent.querySelector('.terminal-instructions');
-            if (instructionsDiv) {
-                instructionsDiv.textContent = "Our Analysts are in action. Waiting for the first task to complete...";
-            } else {
-                terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
-<div class="terminal-instructions">Our Analysts are in action. Waiting for the first task to complete...</div>`;
-            }
+            terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">Our Analysts are analyzing ${selectedSymbol}. Waiting for the first task to complete...</div>`;
         }
 
         // Initialize and start a task immediately
-        debugLog("API Connected - Assigning immediate task");
+        debugLog(`API Connected - Assigning immediate task for ${selectedSymbol}`);
 
         // Select a random analyst and start them working immediately
         const tickers = ['event', 'sentiment', 'market', 'quant'];
@@ -1179,10 +1185,10 @@ function connectToApi() {
 
             // Force them to go to desk and start analyzing
             randomAnalyst.goToDesk();
-            randomAnalyst.speak("Urgent analysis needed!");
+            randomAnalyst.speak(`Urgent ${selectedSymbol} analysis needed!`);
 
             // Add to the queue and process immediately
-            fetchQueue.push({ ticker: randomTicker, hasNewData: true });
+            fetchQueue.push({ ticker: randomTicker, hasNewData: true, symbol: selectedSymbol });
             isTaskInProgress = false;
             currentFetchingTicker = null;
             processQueue();
@@ -1197,7 +1203,7 @@ function connectToApi() {
         fetchChainData();
         startTaskScheduler();
 
-        debugLog("Immediate analysis assigned");
+        debugLog(`Immediate ${selectedSymbol} analysis assigned`);
     }
 }
 
@@ -1212,6 +1218,16 @@ function disconnectFromApi() {
         for (const p of people) {
             p.isFetching = false;
         }
+
+        // Reset the connect button text
+        const connectBtn = document.getElementById('connectBtn');
+        if (connectBtn) {
+            connectBtn.textContent = 'Connect';
+        }
+
+        // Reset API form
+        updateTerminalDisplay();
+
         debugLog("API Disconnected");
     }
 }
@@ -1294,22 +1310,23 @@ function processQueue() {
     const queueItem = fetchQueue.shift();
     const ticker = queueItem.ticker;
     const hasNewData = queueItem.hasNewData;
+    const symbol = queueItem.symbol || document.getElementById('symbolSelect').value || 'BTC';
 
     currentFetchingTicker = ticker;
-    debugLog(`Processing: ${ticker} (newData: ${hasNewData})`);
+    debugLog(`Processing: ${ticker} for ${symbol} (newData: ${hasNewData})`);
 
     const person = people.find(p => p.ticker.toLowerCase() === ticker);
     if (person) {
         if (person.x === person.desk.x && person.y === person.desk.y) {
             person.startFetching();
-            fetchReasoningData(ticker, hasNewData);
+            fetchReasoningData(ticker, hasNewData, symbol);
         } else {
             person.goToDesk();
             const checkInterval = setInterval(() => {
                 if (person.x === person.desk.x && person.y === person.desk.y) {
                     clearInterval(checkInterval);
                     person.startFetching();
-                    fetchReasoningData(ticker, hasNewData);
+                    fetchReasoningData(ticker, hasNewData, symbol);
                 }
             }, 500);
         }
@@ -1321,7 +1338,7 @@ function processQueue() {
     }
 }
 
-async function fetchReasoningData(ticker, hasNewData) {
+async function fetchReasoningData(ticker, hasNewData, symbol) {
     if (!apiConnected || !chainLength) {
         currentFetchingTicker = null;
         isTaskInProgress = false;
@@ -1338,15 +1355,15 @@ async function fetchReasoningData(ticker, hasNewData) {
     }, 200);
 
     if (!hasNewData) {
-        debugLog(`Simulating analysis for ${ticker} (no new data)...`);
+        debugLog(`Simulating analysis for ${ticker} on ${symbol} (no new data)...`);
 
         const analysisTime = 5000 + Math.random() * 3000;
 
         setTimeout(() => {
-            updateSyncStatus(`${observerName} revised analysis and found nothing new.`);
+            updateSyncStatus(`${observerName} revised ${symbol} analysis and found nothing new.`);
 
             if (person) {
-                person.speak("Analysis revision complete");
+                person.speak(`${symbol} analysis revision complete`);
                 person.isFetching = false;
 
                 setTimeout(() => {
@@ -1363,7 +1380,7 @@ async function fetchReasoningData(ticker, hasNewData) {
 
             clearInterval(displayInterval);
 
-            addToTerminalHistory(`${observerName} completed analysis - no changes detected`);
+            addToTerminalHistory(`${observerName} completed ${symbol} analysis - no changes detected`);
             updateTerminalDisplay();
 
             setTimeout(() => {
@@ -1379,9 +1396,10 @@ async function fetchReasoningData(ticker, hasNewData) {
     }
 
     try {
-        debugLog(`Fetching reasoning for ${ticker}...`);
+        debugLog(`Fetching reasoning for ${ticker} on ${symbol}...`);
 
-        const url = `${REASONING_API_BASE}${chainLength}&ticker=${ticker.toUpperCase()}`;
+        const apiKey = document.getElementById('apiKey').value;
+        const url = `${REASONING_API_BASE}${chainLength}&ticker=${ticker.toUpperCase()}&symbol=${symbol}&api_key=${apiKey}`;
         const response = await fetch(url);
         const data = await response.json();
 
@@ -1400,15 +1418,15 @@ async function fetchReasoningData(ticker, hasNewData) {
                 }, 3000);
             } else {
                 debugLog(`No person found for ticker after fetch: ${ticker}`);
-                updateSyncStatus(`${observerName} finished analysis and found something new!`);
+                updateSyncStatus(`${observerName} finished ${symbol} analysis and found something new!`);
                 clearInterval(displayInterval);
                 currentFetchingTicker = null;
                 isTaskInProgress = false;
                 scheduleNextTask();
             }
         } else {
-            debugLog(`No reasoning data for ${ticker}`);
-            updateSyncStatus(`${observerName} finished analysis and found nothing new.`);
+            debugLog(`No reasoning data for ${ticker} on ${symbol}`);
+            updateSyncStatus(`${observerName} finished ${symbol} analysis and found nothing new.`);
             if (person) {
                 person.isFetching = false;
 
@@ -1432,9 +1450,9 @@ async function fetchReasoningData(ticker, hasNewData) {
             }
         }, 3000);
     } catch (err) {
-        console.error(`Error fetching reasoning for ${ticker}`, err);
-        debugLog(`Error fetching reasoning for ${ticker}`);
-        updateSyncStatus(`Error during ${observerName}'s analysis`);
+        console.error(`Error fetching reasoning for ${ticker} on ${symbol}`, err);
+        debugLog(`Error fetching reasoning for ${ticker} on ${symbol}`);
+        updateSyncStatus(`Error during ${observerName}'s ${symbol} analysis`);
         if (person) {
             person.isFetching = false;
 
@@ -1526,7 +1544,32 @@ function updateTerminalDisplay() {
         }
     }
 
-    terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>\n=== Terminal History ===\n\n${terminalHistory.join('\n')}\n`;
+    // If not connected, show the API form
+    if (!apiConnected) {
+        // Get any existing values to preserve them
+        const apiKey = document.getElementById('apiKey')?.value || '';
+        const selectedSymbol = document.getElementById('symbolSelect')?.value || 'BTC';
+
+        terminalContent.innerHTML = `
+            <div id="branding">Welcome to Fundis.AI</div>
+            <div class="terminal-form">
+                <div class="form-group">
+                    <label for="apiKey">Please input your API Key:</label>
+                    <input type="text" id="apiKey" class="terminal-input" value="${apiKey}" placeholder="Paste or type your API key here">
+                </div>
+                <div class="form-group">
+                    <label for="symbolSelect">Please select a Symbol:</label>
+                    <select id="symbolSelect" class="terminal-select">
+                        <option value="BTC" ${selectedSymbol === 'BTC' ? 'selected' : ''}>BTC</option>
+                        <option value="ETH" ${selectedSymbol === 'ETH' ? 'selected' : ''}>ETH</option>
+                        <option value="DOGE" ${selectedSymbol === 'DOGE' ? 'selected' : ''}>DOGE</option>
+                    </select>
+                </div>
+            </div>`;
+    } else {
+        // Show terminal history when connected
+        terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>\n=== Terminal History ===\n\n${terminalHistory.join('\n')}\n`;
+    }
 }
 
 function startTaskScheduler() {
@@ -1725,9 +1768,55 @@ document.getElementById('api-status-dot').addEventListener('click', () => {
     if (apiConnected) {
         disconnectFromApi();
     } else {
+        const apiKey = document.getElementById('apiKey').value;
+        if (!apiKey) {
+            updateSyncStatus("Error: API Key is required");
+            return;
+        }
+
         // First show connecting state
         updateConnectionStatus('connecting');
         connectToApi();
+    }
+});
+
+// Add event listener for the API key input to allow pressing Enter to connect
+document.addEventListener('DOMContentLoaded', () => {
+    const apiKeyInput = document.getElementById('apiKey');
+    const connectBtn = document.getElementById('connectBtn');
+
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter' && !apiConnected) {
+                const apiKey = apiKeyInput.value;
+                if (apiKey) {
+                    updateConnectionStatus('connecting');
+                    connectToApi();
+                } else {
+                    updateSyncStatus("Error: API Key is required");
+                }
+            }
+        });
+    }
+
+    // Make Connect button visible and add event listener
+    if (connectBtn) {
+        connectBtn.style.display = 'block';
+        connectBtn.addEventListener('click', () => {
+            if (apiConnected) {
+                disconnectFromApi();
+                connectBtn.textContent = 'Connect';
+            } else {
+                const apiKey = document.getElementById('apiKey').value;
+                if (apiKey) {
+                    updateConnectionStatus('connecting');
+                    connectToApi();
+                    connectBtn.textContent = 'Disconnect';
+                } else {
+                    updateSyncStatus("Error: API Key is required");
+                }
+            }
+        });
     }
 });
 

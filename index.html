@@ -40,7 +40,20 @@
 
         <div id="terminalContent">
           <div id="branding">Welcome to Fundis.AI</div>
-          <div class="terminal-instructions">Click the top-right button to see our Analysts real-time performance in action...</div>
+          <div class="terminal-form">
+            <div class="form-group">
+              <label for="apiKey">Please input your API Key:</label>
+              <input type="text" id="apiKey" class="terminal-input" placeholder="Paste or type your API key here">
+            </div>
+            <div class="form-group">
+              <label for="symbolSelect">Please select a Symbol:</label>
+              <select id="symbolSelect" class="terminal-select">
+                <option value="BTC" selected>BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="DOGE">DOGE</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div id="terminalBottomBar">

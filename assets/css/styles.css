@@ -292,7 +292,21 @@ body {
 }
 
 #connectBtn {
-    display: none;
+    display: block;
+    background-color: #0f0;
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#connectBtn:hover {
+    background-color: #00cc00;
+    box-shadow: 0 0 8px rgba(0, 255, 0, 0.5);
 }
 
 #debug-info {
@@ -457,4 +471,60 @@ body {
 
 #chain-info a:hover {
     color: #0f0;
+}
+
+/* Added styling for terminal form elements */
+.terminal-form {
+    margin-top: 20px;
+    color: #0f0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.terminal-input,
+.terminal-select {
+    width: 100%;
+    background-color: #333;
+    border: 1px solid #0f0;
+    color: #0f0;
+    font-family: monospace;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+}
+
+.terminal-input:focus,
+.terminal-select:focus {
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+.terminal-select option {
+    background-color: #333;
+    color: #0f0;
+}
+
+/* Mobile-specific form styling */
+@media (max-width: 767px) {
+    .terminal-form {
+        margin-top: 15px;
+    }
+
+    .form-group label {
+        font-size: 14px;
+    }
+
+    .terminal-input,
+    .terminal-select {
+        padding: 6px 8px;
+        font-size: 13px;
+    }
 }
