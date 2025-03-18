@@ -675,14 +675,16 @@ class Person {
                 formattedReasoning = structuredReasoning;
             }
 
-            // Format data as a table for all analysts
-            if (['event', 'sentiment', 'market', 'quant'].includes(this.ticker.toLowerCase())) {
-                // Use the function name that's actually defined in main.js
+            // Always try to format the data as a table regardless of analyst type
+            try {
                 if (typeof formatAnalystData === 'function') {
                     formattedReasoning = formatAnalystData(formattedReasoning);
                 } else if (typeof formatEventAnalystData === 'function') {
                     formattedReasoning = formatEventAnalystData(formattedReasoning);
                 }
+            } catch (e) {
+                console.error(`Error formatting data for ${this.name}:`, e);
+                // If formatting fails, keep the original formatting
             }
 
             this.reasoningText = `<strong>=== ${this.name} Analysis Results ===</strong>\n` +

@@ -1175,13 +1175,20 @@ function connectToApi() {
         // Get API key and symbol from form
         const apiKey = document.getElementById('apiKey').value;
         const selectedSymbol = document.getElementById('symbolSelect').value;
+        const endBlock = parseInt(document.getElementById('endBlock').value);
 
         if (!apiKey) {
             updateSyncStatus("Error: API Key is required");
             return;
         }
 
-        debugLog(`Connecting with API key and symbol: ${selectedSymbol}`);
+        // Validate endBlock value
+        if (isNaN(endBlock) || endBlock < 200 || endBlock % 50 !== 0) {
+            updateSyncStatus("Error: End Block must be ≥ 200 and a multiple of 50");
+            return;
+        }
+
+        debugLog(`Connecting with API key, symbol: ${selectedSymbol}, and endBlock: ${endBlock}`);
 
         apiConnected = true;
         updateConnectionStatus(true);
@@ -1226,6 +1233,7 @@ function connectToApi() {
                     apiKey,
                     'initial_market_analysis',
                     'events',
+                    endBlock,
                     () => {
                         // After Event Agent finishes, start Sentiment Agent
                         // Update terminal message for Sentiment Analyst
@@ -1241,6 +1249,7 @@ function connectToApi() {
                             apiKey,
                             'initial_sentiment_analysis',
                             'sentiments',
+                            endBlock,
                             () => {
                                 // After Sentiment Agent finishes, start Market Agent
                                 // Update terminal message for Market Analyst
@@ -1256,6 +1265,7 @@ function connectToApi() {
                                     apiKey,
                                     'initial_market_analysis',
                                     'markets',
+                                    endBlock,
                                     () => {
                                         // After Market Agent finishes, start Quant Agent
                                         // Update terminal message for Quant Analyst
@@ -1271,10 +1281,11 @@ function connectToApi() {
                                             apiKey,
                                             'initial_quant_analysis',
                                             'quants',
+                                            endBlock,
                                             () => {
                                                 // After all analysts have completed their individual analyses
                                                 // Start the combined analysis
-                                                performCombinedAnalysis(selectedSymbol, apiKey);
+                                                performCombinedAnalysis(selectedSymbol, apiKey, endBlock);
                                             }
                                         );
                                     }
@@ -1395,13 +1406,11 @@ function wrapText(text, maxWidth) {
 // Modified version that handles the specific format of Event Analyst data
 function formatAnalystData(data) {
     try {
-        // Check if this is Event Analyst data by looking for typical block headers
-        if (typeof data === 'string' &&
-            (data.includes("Block 0-49:") ||
-                data.includes("Block 50-99:") ||
-                data.includes("Block 100-149:") ||
-                data.includes("Block 150-199:"))) {
-
+        // Use a more general pattern to detect block headers with any numeric range
+        const blockHeaderPattern = /Block \d+-\d+:/;
+        
+        // Check if this is analyst data by looking for block header pattern
+        if (typeof data === 'string' && blockHeaderPattern.test(data)) {
             // Split the string by block sections
             const blocks = data.split(/Block \d+-\d+:/g).filter(block => block.trim());
             let formattedData = "";
@@ -1439,22 +1448,27 @@ function formatAnalystData(data) {
             return formattedData;
         }
 
-        return data; // Return original if not Event Analyst data
+        return data; // Return original if not analyst data with block headers
     } catch (error) {
-        console.error("Error formatting Event Analyst data:", error);
+        console.error("Error formatting Analyst data:", error);
         return data; // Return original on error
     }
 }
 
 // Updated function to handle sequential analysis with callback
-function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisType, onCompleteCallback) {
+function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisType, endBlock, onCompleteCallback) {
+    // Calculate chunk ranges based on endBlock
+    const chunkSize = 50;
+    const startBlock = Math.max(0, endBlock - 200);
+    
     // Define the chunks to analyze
-    const chunks = [
-        { start: 0, end: 49 },
-        { start: 50, end: 99 },
-        { start: 100, end: 149 },
-        { start: 150, end: 199 }
-    ];
+    const chunks = [];
+    for (let start = startBlock; start < endBlock; start += chunkSize) {
+        chunks.push({ 
+            start: start, 
+            end: Math.min(start + chunkSize - 1, endBlock - 1) 
+        });
+    }
 
     let agentResults = '';
     let currentChunk = 0;
@@ -1470,8 +1484,11 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
 
             // Format the results as a table for all analysts
             let formattedResults = agentResults;
-            if (['event', 'sentiment', 'market', 'quant'].includes(analyst.ticker.toLowerCase())) {
+            try {
                 formattedResults = formatAnalystData(agentResults);
+            } catch (error) {
+                console.error(`Error formatting ${analystName} results:`, error);
+                // If formatting fails, keep the original agentResults
             }
 
             // Store results in reasoningData for individual analyst access
@@ -1942,6 +1959,7 @@ function updateTerminalDisplay() {
         // Get any existing values to preserve them
         const apiKey = document.getElementById('apiKey')?.value || '';
         const selectedSymbol = document.getElementById('symbolSelect')?.value || 'BTC';
+        const endBlock = document.getElementById('endBlock')?.value || '200';
 
         terminalContent.innerHTML = `
             <div id="branding">Welcome to Fundis.AI</div>
@@ -1957,6 +1975,10 @@ function updateTerminalDisplay() {
                         <option value="ETH" ${selectedSymbol === 'ETH' ? 'selected' : ''}>ETH</option>
                         <option value="DOGE" ${selectedSymbol === 'DOGE' ? 'selected' : ''}>DOGE</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="endBlock">Please input ending Block:</label>
+                    <input type="number" id="endBlock" class="terminal-input" value="${endBlock}" placeholder="Enter a number ≥ 200 (multiple of 50)" min="200" step="50">
                 </div>
             </div>`;
     } else {
@@ -2209,6 +2231,34 @@ document.getElementById('api-status-dot').addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKey');
     const connectBtn = document.getElementById('connectBtn');
+    const endBlockInput = document.getElementById('endBlock');
+
+    // Add validation for endBlock input
+    if (endBlockInput) {
+        // Validate on change
+        endBlockInput.addEventListener('change', () => {
+            const value = parseInt(endBlockInput.value);
+            
+            if (isNaN(value) || value < 200) {
+                endBlockInput.value = 200; // Reset to minimum valid value
+                updateSyncStatus("End Block must be ≥ 200");
+            } else if (value % 50 !== 0) {
+                // Round to nearest multiple of 50
+                const roundedValue = Math.round(value / 50) * 50;
+                endBlockInput.value = roundedValue;
+                updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
+            }
+        });
+        
+        // Also validate on input to immediately correct invalid entries
+        endBlockInput.addEventListener('input', () => {
+            const value = endBlockInput.value;
+            // Allow empty input while typing
+            if (value && (isNaN(parseInt(value)) || parseInt(value) < 200)) {
+                updateSyncStatus("End Block must be ≥ 200");
+            }
+        });
+    }
 
     if (apiKeyInput) {
         apiKeyInput.addEventListener('keyup', (event) => {
@@ -2463,9 +2513,13 @@ if (Person.prototype.goToDesk) {
 
 // Add this new function after fetchDataFromApi function
 // Function to perform combined analysis after all individual analyses
-function performCombinedAnalysis(symbol, apiKey) {
+function performCombinedAnalysis(symbol, apiKey, endBlock) {
     debugLog("Starting combined analysis");
     updateSyncStatus("All analysts are putting together their analysis...");
+    
+    // Calculate the chunk range for combined analysis based on endBlock
+    const startBlock = Math.max(0, endBlock - 200);
+    const endBlockValue = endBlock - 1; // API uses inclusive end values
     
     // Have all analysts speak the same message and prepare for collaboration
     for (const person of people) {
@@ -2476,28 +2530,28 @@ function performCombinedAnalysis(symbol, apiKey) {
     const terminalContent = document.getElementById('terminalContent');
     if (terminalContent) {
         terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
-<div class="terminal-instructions">All analysts are collaborating on the final BTC analysis...</div>
-<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Gathering comprehensive insights across all analysis dimensions...</div>`;
+<div class="terminal-instructions">All analysts are collaborating on the final ${symbol} analysis...</div>
+<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Gathering comprehensive insights across all analysis dimensions (blocks ${startBlock}-${endBlockValue})...</div>`;
         
         if (window.combinedAnalysisResults) {
             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
         }
     }
     
-    // Make the two API calls in parallel
-    const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=0&chunk_end=199&api_key=${apiKey}`;
-    const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=0&chunk_end=199&api_key=${apiKey}`;
+    // Make the two API calls in parallel with the new block range
+    const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
+    const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
     
     // Show progress in terminal
-    updateSyncStatus("Fetching comprehensive observation data...");
+    updateSyncStatus(`Fetching comprehensive observation data for blocks ${startBlock}-${endBlockValue}...`);
     
     // First fetch the observation data
-    fetchDataFromApi(observationUrl, symbol, 0, 199)
+    fetchDataFromApi(observationUrl, symbol, startBlock, endBlockValue)
         .then(observationResult => {
-            updateSyncStatus("Fetching strategic consideration data...");
+            updateSyncStatus(`Fetching strategic consideration data for blocks ${startBlock}-${endBlockValue}...`);
             
             // Then fetch the consideration data
-            return fetchDataFromApi(considerationUrl, symbol, 0, 199)
+            return fetchDataFromApi(considerationUrl, symbol, startBlock, endBlockValue)
                 .then(considerationResult => {
                     return { observation: observationResult, consideration: considerationResult };
                 });
@@ -2508,16 +2562,30 @@ function performCombinedAnalysis(symbol, apiKey) {
             updateSyncStatus("Combined analysis completed successfully!");
             
             // Format the results nicely
-            let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS ===</strong>\n\n`;
+            let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS (Blocks ${startBlock}-${endBlockValue}) ===</strong>\n\n`;
             
             if (results.observation) {
-                formattedResults += `<strong>Market Observations (Blocks 0-199):</strong>\n${formatAnalystData(results.observation)}\n\n`;
+                try {
+                    // Always try to format the observation data
+                    const formattedObservation = formatAnalystData(results.observation);
+                    formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedObservation}\n\n`;
+                } catch (error) {
+                    console.error("Error formatting observation data:", error);
+                    formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.observation}\n\n`;
+                }
             } else {
                 formattedResults += `<strong>Market Observations:</strong> No data available\n\n`;
             }
             
             if (results.consideration) {
-                formattedResults += `<strong>Strategic Considerations (Blocks 0-199):</strong>\n${formatAnalystData(results.consideration)}`;
+                try {
+                    // Always try to format the consideration data
+                    const formattedConsideration = formatAnalystData(results.consideration);
+                    formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedConsideration}`;
+                } catch (error) {
+                    console.error("Error formatting consideration data:", error);
+                    formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.consideration}`;
+                }
             } else {
                 formattedResults += `<strong>Strategic Considerations:</strong> No data available`;
             }
@@ -2536,7 +2604,7 @@ function performCombinedAnalysis(symbol, apiKey) {
             }
             
             // Add to terminal history
-            addToTerminalHistory("All analysts completed comprehensive BTC analysis");
+            addToTerminalHistory(`All analysts completed comprehensive ${symbol} analysis for blocks ${startBlock}-${endBlockValue}`);
             
             // Have all analysts celebrate success
             for (const person of people) {
