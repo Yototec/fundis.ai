@@ -1186,19 +1186,23 @@ function connectToApi() {
         // Find the Event and Sentiment Analysts
         const eventAnalyst = people.find(p => p.ticker.toLowerCase() === 'event');
         const sentimentAnalyst = people.find(p => p.ticker.toLowerCase() === 'sentiment');
+        const marketAnalyst = people.find(p => p.ticker.toLowerCase() === 'market');
 
         // Global variable to store combined results
         window.combinedAnalysisResults = '';
 
         // Stop whatever analysts are doing and send them to their desks
-        if (eventAnalyst && sentimentAnalyst) {
+        if (eventAnalyst && sentimentAnalyst && marketAnalyst) {
             // Force Event Analyst to go to desk and start analyzing
             eventAnalyst.state = 'walking';
             eventAnalyst.goToDesk();
 
-            // Sentiment analyst goes to desk but doesn't start yet
+            // Other analysts go to desk but don't start yet
             sentimentAnalyst.state = 'walking';
             sentimentAnalyst.goToDesk();
+
+            marketAnalyst.state = 'walking';
+            marketAnalyst.goToDesk();
 
             // Start the sequential analysis process with Event Agent
             // Pass a callback that will start Sentiment Agent when Event Agent finishes
@@ -1210,29 +1214,48 @@ function connectToApi() {
                     'initial_market_analysis',
                     'events',
                     () => {
-                        // Update the terminal message for Sentiment Analyst
+                        // After Event Agent finishes, start Sentiment Agent
+                        // Update terminal message for Sentiment Analyst
                         if (terminalContent) {
                             terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
 <div class="terminal-instructions">Sentiment Analyst is analyzing ${selectedSymbol}...</div>`;
                             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
                         }
 
-                        // After Event Agent finishes, start Sentiment Agent
                         startSequentialAnalysis(
                             sentimentAnalyst,
                             selectedSymbol,
                             apiKey,
                             'initial_sentiment_analysis',
-                            'sentiments'
+                            'sentiments',
+                            () => {
+                                // After Sentiment Agent finishes, start Market Agent
+                                // Update terminal message for Market Analyst
+                                if (terminalContent) {
+                                    terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">Market Analyst is analyzing ${selectedSymbol}...</div>`;
+                                    terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+                                }
+
+                                startSequentialAnalysis(
+                                    marketAnalyst,
+                                    selectedSymbol,
+                                    apiKey,
+                                    'initial_market_analysis',
+                                    'markets'
+                                );
+                            }
                         );
                     }
                 );
             }, 1000);
         }
 
-        // Disable other analysts from speaking except event and sentiment
+        // Disable other analysts from speaking except event, sentiment, and market
         for (const person of people) {
-            if (person.ticker.toLowerCase() !== 'event' && person.ticker.toLowerCase() !== 'sentiment') {
+            if (person.ticker.toLowerCase() !== 'event' &&
+                person.ticker.toLowerCase() !== 'sentiment' &&
+                person.ticker.toLowerCase() !== 'market') {
                 // Override speak method for other analysts
                 person.originalSpeak = person.speak;
                 person.speak = function () { }; // Empty function to prevent speaking
