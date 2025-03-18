@@ -1187,12 +1187,13 @@ function connectToApi() {
         const eventAnalyst = people.find(p => p.ticker.toLowerCase() === 'event');
         const sentimentAnalyst = people.find(p => p.ticker.toLowerCase() === 'sentiment');
         const marketAnalyst = people.find(p => p.ticker.toLowerCase() === 'market');
+        const quantAnalyst = people.find(p => p.ticker.toLowerCase() === 'quant');
 
         // Global variable to store combined results
         window.combinedAnalysisResults = '';
 
         // Stop whatever analysts are doing and send them to their desks
-        if (eventAnalyst && sentimentAnalyst && marketAnalyst) {
+        if (eventAnalyst && sentimentAnalyst && marketAnalyst && quantAnalyst) {
             // Force Event Analyst to go to desk and start analyzing
             eventAnalyst.state = 'walking';
             eventAnalyst.goToDesk();
@@ -1203,6 +1204,9 @@ function connectToApi() {
 
             marketAnalyst.state = 'walking';
             marketAnalyst.goToDesk();
+
+            quantAnalyst.state = 'walking';
+            quantAnalyst.goToDesk();
 
             // Start the sequential analysis process with Event Agent
             // Pass a callback that will start Sentiment Agent when Event Agent finishes
@@ -1242,7 +1246,24 @@ function connectToApi() {
                                     selectedSymbol,
                                     apiKey,
                                     'initial_market_analysis',
-                                    'markets'
+                                    'markets',
+                                    () => {
+                                        // After Market Agent finishes, start Quant Agent
+                                        // Update terminal message for Quant Analyst
+                                        if (terminalContent) {
+                                            terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">Quant Analyst is analyzing ${selectedSymbol}...</div>`;
+                                            terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+                                        }
+
+                                        startSequentialAnalysis(
+                                            quantAnalyst,
+                                            selectedSymbol,
+                                            apiKey,
+                                            'initial_quant_analysis',
+                                            'quants'
+                                        );
+                                    }
                                 );
                             }
                         );
@@ -1251,11 +1272,13 @@ function connectToApi() {
             }, 1000);
         }
 
-        // Disable other analysts from speaking except event, sentiment, and market
+        // Disable other analysts from speaking except those who are analyzing
         for (const person of people) {
+            // Allow all four analysts to speak
             if (person.ticker.toLowerCase() !== 'event' &&
                 person.ticker.toLowerCase() !== 'sentiment' &&
-                person.ticker.toLowerCase() !== 'market') {
+                person.ticker.toLowerCase() !== 'market' &&
+                person.ticker.toLowerCase() !== 'quant') {
                 // Override speak method for other analysts
                 person.originalSpeak = person.speak;
                 person.speak = function () { }; // Empty function to prevent speaking
