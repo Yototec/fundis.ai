@@ -5,21 +5,19 @@ class Person {
         this.name = name;
         this.ticker = ticker;
         this.uniformColor = COLORS[ticker.toLowerCase() + 'Uniform'];
-        this.destination = null;
-        this.path = [];
-        this.state = 'idle';
-        this.stateTime = 0;
-        this.interactionPartner = null;
         this.desk = findDeskForTicker(ticker);
+        // Go directly to desk position
+        this.x = this.desk.x;
+        this.y = this.desk.y;
         this.messageTime = 0;
         this.message = '';
         this.isFetching = false;
         this.reasoningText = '';
-        this.facingDirection = 'down';
-        this.animationFrame = 0;
-        this.animationSpeed = 0.5;
-        this.animationPhase = 0; // New property for smoother animation
+        this.facingDirection = 'up';
+        this.state = 'idle';
+        this.stateTime = 0;
 
+        // Body dimensions for rendering
         this.bodyWidth = GRID_SIZE * 0.98;
         this.bodyHeight = GRID_SIZE * 1.12;
         this.headSize = GRID_SIZE * 0.7;
@@ -76,22 +74,7 @@ class Person {
         const centerX = this.x * GRID_SIZE + GRID_SIZE / 2;
         const centerY = this.y * GRID_SIZE + GRID_SIZE / 2;
 
-        if (this.state === 'walking' && this.path.length > 0) {
-            const nextPoint = this.path[0];
-            if (nextPoint.x > this.x) this.facingDirection = 'right';
-            else if (nextPoint.x < this.x) this.facingDirection = 'left';
-            else if (nextPoint.y > this.y) this.facingDirection = 'down';
-            else if (nextPoint.y < this.y) this.facingDirection = 'up';
-        } else if (this.state === 'working') {
-            this.facingDirection = 'up';
-        }
-
-        if (this.state === 'walking') {
-            this.animationFrame = (this.animationFrame + 1) % 20;
-        } else {
-            this.animationFrame = 0;
-        }
-
+        // Draw appropriate view based on facing direction
         if (this.facingDirection === 'up') {
             this.drawFromBehind(centerX, centerY);
         } else if (this.facingDirection === 'down') {
@@ -102,10 +85,12 @@ class Person {
             this.drawFromSide(centerX, centerY, 'right');
         }
 
+        // Draw speech bubble if message exists
         if (this.message && this.messageTime > 0) {
             drawSpeechBubble(centerX, centerY - GRID_SIZE * 1.8, this.message);
         }
 
+        // Draw name
         ctx.fillStyle = '#000';
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
@@ -117,27 +102,10 @@ class Person {
     }
 
     drawFromFront(x, y) {
-        // Enhanced leg animation with smoother movement
-        const legAngle = Math.sin(this.animationPhase * Math.PI / 10);
-        const legSpread = this.state === 'walking' ? legAngle * 4 : 0;
-        const legHeight = this.state === 'walking' ? this.legHeight + Math.abs(legAngle) * 2 : this.legHeight;
-
-        // Draw legs with better animation
+        // Draw legs (static)
         ctx.fillStyle = this.uniformColor;
-        // Left leg with dynamic position
-        ctx.fillRect(
-            x - this.bodyWidth / 2,
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            legHeight - legSpread
-        );
-        // Right leg with opposite phase
-        ctx.fillRect(
-            x + this.bodyWidth / 2 - this.legWidth,
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            legHeight + legSpread
-        );
+        ctx.fillRect(x - this.bodyWidth / 2, y + this.bodyHeight / 2, this.legWidth, this.legHeight);
+        ctx.fillRect(x + this.bodyWidth / 2 - this.legWidth, y + this.bodyHeight / 2, this.legWidth, this.legHeight);
 
         // Draw body/uniform with rounded corners
         ctx.fillStyle = this.uniformColor;
@@ -160,23 +128,18 @@ class Person {
         // Add ticker logo on uniform
         this.drawTickerLogo(x, y - this.bodyHeight / 5, this.ticker);
 
-        // Enhanced arm animation for walking
-        const armAngle = Math.sin(this.animationPhase * Math.PI / 10 + Math.PI); // Opposite phase to legs
-        const armOffset = this.state === 'walking' ? armAngle * 3 : 0;
-
+        // Draw arms (static)
         ctx.fillStyle = this.uniformColor;
-        // Left arm with dynamic position
         this.roundedRect(
             x - this.bodyWidth / 2 - this.armWidth,
-            y - this.bodyHeight / 4 + armOffset,
+            y - this.bodyHeight / 4,
             this.armWidth,
             this.armHeight,
             3
         );
-        // Right arm with opposite phase
         this.roundedRect(
             x + this.bodyWidth / 2,
-            y - this.bodyHeight / 4 - armOffset,
+            y - this.bodyHeight / 4,
             this.armWidth,
             this.armHeight,
             3
@@ -187,7 +150,7 @@ class Person {
         ctx.beginPath();
         ctx.arc(
             x - this.bodyWidth / 2 - this.armWidth / 2,
-            y - this.bodyHeight / 4 + this.armHeight + armOffset,
+            y - this.bodyHeight / 4 + this.armHeight,
             this.armWidth / 2 + 1,
             0,
             Math.PI * 2
@@ -196,7 +159,7 @@ class Person {
         ctx.beginPath();
         ctx.arc(
             x + this.bodyWidth / 2 + this.armWidth / 2,
-            y - this.bodyHeight / 4 + this.armHeight - armOffset,
+            y - this.bodyHeight / 4 + this.armHeight,
             this.armWidth / 2 + 1,
             0,
             Math.PI * 2
@@ -253,27 +216,10 @@ class Person {
     }
 
     drawFromBehind(x, y) {
-        // Enhanced leg animation with smoother movement
-        const legAngle = Math.sin(this.animationPhase * Math.PI / 10);
-        const legSpread = this.state === 'walking' ? legAngle * 4 : 0;
-        const legHeight = this.state === 'walking' ? this.legHeight + Math.abs(legAngle) * 2 : this.legHeight;
-
-        // Draw legs with better animation
+        // Draw legs (static)
         ctx.fillStyle = this.uniformColor;
-        // Left leg
-        ctx.fillRect(
-            x - this.bodyWidth / 2,
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            legHeight - legSpread
-        );
-        // Right leg
-        ctx.fillRect(
-            x + this.bodyWidth / 2 - this.legWidth,
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            legHeight + legSpread
-        );
+        ctx.fillRect(x - this.bodyWidth / 2, y + this.bodyHeight / 2, this.legWidth, this.legHeight);
+        ctx.fillRect(x + this.bodyWidth / 2 - this.legWidth, y + this.bodyHeight / 2, this.legWidth, this.legHeight);
 
         // Draw body/uniform with rounded corners
         ctx.fillStyle = this.uniformColor;
@@ -288,23 +234,18 @@ class Person {
         // Add ticker logo on back of uniform
         this.drawTickerLogo(x, y - this.bodyHeight / 5, this.ticker);
 
-        // Enhanced arm animation for walking
-        const armAngle = Math.sin(this.animationPhase * Math.PI / 10 + Math.PI); // Opposite phase to legs
-        const armOffset = this.state === 'walking' ? armAngle * 3 : 0;
-
+        // Draw arms (static)
         ctx.fillStyle = this.uniformColor;
-        // Left arm
         this.roundedRect(
             x - this.bodyWidth / 2 - this.armWidth,
-            y - this.bodyHeight / 4 + armOffset,
+            y - this.bodyHeight / 4,
             this.armWidth,
             this.armHeight,
             3
         );
-        // Right arm
         this.roundedRect(
             x + this.bodyWidth / 2,
-            y - this.bodyHeight / 4 - armOffset,
+            y - this.bodyHeight / 4,
             this.armWidth,
             this.armHeight,
             3
@@ -315,7 +256,7 @@ class Person {
         ctx.beginPath();
         ctx.arc(
             x - this.bodyWidth / 2 - this.armWidth / 2,
-            y - this.bodyHeight / 4 + this.armHeight + armOffset,
+            y - this.bodyHeight / 4 + this.armHeight,
             this.armWidth / 2 + 1,
             0,
             Math.PI * 2
@@ -324,7 +265,7 @@ class Person {
         ctx.beginPath();
         ctx.arc(
             x + this.bodyWidth / 2 + this.armWidth / 2,
-            y - this.bodyHeight / 4 + this.armHeight - armOffset,
+            y - this.bodyHeight / 4 + this.armHeight,
             this.armWidth / 2 + 1,
             0,
             Math.PI * 2
@@ -350,29 +291,10 @@ class Person {
     drawFromSide(x, y, side) {
         const direction = (side === 'left') ? -1 : 1;
 
-        // Enhanced leg animation with smoother movement
-        const legPhase = this.animationPhase * Math.PI / 10;
-        const frontLegAngle = Math.sin(legPhase);
-        const backLegAngle = Math.sin(legPhase + Math.PI); // Opposite phase
-        const frontLegOffset = this.state === 'walking' ? frontLegAngle * 4 : 0;
-        const backLegOffset = this.state === 'walking' ? backLegAngle * 4 : 0;
-
-        // Draw legs with better animation
+        // Draw legs (static)
         ctx.fillStyle = this.uniformColor;
-        // Front leg
-        ctx.fillRect(
-            x + direction * (this.bodyWidth / 4),
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            this.legHeight + frontLegOffset
-        );
-        // Back leg
-        ctx.fillRect(
-            x - direction * (this.bodyWidth / 4),
-            y + this.bodyHeight / 2,
-            this.legWidth,
-            this.legHeight + backLegOffset
-        );
+        ctx.fillRect(x + direction * (this.bodyWidth / 4), y + this.bodyHeight / 2, this.legWidth, this.legHeight);
+        ctx.fillRect(x - direction * (this.bodyWidth / 4), y + this.bodyHeight / 2, this.legWidth, this.legHeight);
 
         // Draw body/uniform with rounded corners
         ctx.fillStyle = this.uniformColor;
@@ -394,14 +316,11 @@ class Person {
             y
         );
 
-        // Enhanced arm animation for walking
-        const armAngle = Math.sin(this.animationPhase * Math.PI / 10 + Math.PI); // Opposite phase to legs
-        const armOffset = this.state === 'walking' ? armAngle * 3 : 0;
-
+        // Draw arm (static)
         ctx.fillStyle = this.uniformColor;
         this.roundedRect(
             x + direction * (this.bodyWidth / 4),
-            y - this.bodyHeight / 4 + armOffset,
+            y - this.bodyHeight / 4,
             this.armWidth * direction,
             this.armHeight,
             3
@@ -412,7 +331,7 @@ class Person {
         ctx.beginPath();
         ctx.arc(
             x + direction * (this.bodyWidth / 4 + this.armWidth / 2 * direction),
-            y - this.bodyHeight / 4 + this.armHeight + armOffset,
+            y - this.bodyHeight / 4 + this.armHeight,
             this.armWidth / 2 + 1,
             0,
             Math.PI * 2
@@ -670,31 +589,8 @@ class Person {
             this.messageTime--;
         }
 
-        // Update animation
-        if (this.state === 'walking') {
-            this.animationPhase += this.animationSpeed;
-            if (this.animationPhase >= 20) {
-                this.animationPhase = 0;
-            }
-            this.animationFrame = Math.floor(this.animationPhase);
-        } else {
-            this.animationPhase = 0;
-            this.animationFrame = 0;
-        }
-
         if (this.isFetching) {
-            if (this.x !== this.desk.x || this.y !== this.desk.y) {
-                this.goToDesk();
-            }
-            else {
-                this.facingDirection = 'up';
-            }
-            return;
-        }
-
-        // Make sure analysts are at their desk if they aren't already
-        if (this.x !== this.desk.x || this.y !== this.desk.y) {
-            this.goToDesk();
+            this.facingDirection = 'up';
             return;
         }
 
@@ -705,19 +601,17 @@ class Person {
                     this.stateTime = 0;
                     const rand = Math.random();
 
-                    // Modified behavior - only desk activities and turning are allowed
                     if (rand < 0.4) {
                         // Start working
                         this.state = 'working';
                         this.stateTime = 0;
-                        //this.speak('Reviewing data');
                         this.facingDirection = 'up';
                     } else if (rand < 0.7) {
-                        // Random turning
+                        // Random turning - only stationary action
                         const directions = ['up', 'down', 'left', 'right'];
                         this.facingDirection = directions[Math.floor(Math.random() * directions.length)];
 
-                        // Say something about looking around
+                        // Say something about looking around using emojis
                         const lookMessages = [
                             "👀 📊 🔍",
                             "💫 🔄 ✨",
@@ -727,18 +621,8 @@ class Person {
                         ];
                         this.speak(lookMessages[Math.floor(Math.random() * lookMessages.length)]);
                     } else {
-                        // Virtual interaction - they speak as if talking to others, but don't move
+                        // Virtual interaction - speak using emojis
                         this.speak(`🔊 👋 ${this.ticker}?`);
-
-                        // Set a timer for someone else to respond
-                        setTimeout(() => {
-                            // Find a random other person to respond
-                            const responders = people.filter(p => p !== this && !p.isFetching);
-                            if (responders.length > 0) {
-                                const responder = responders[Math.floor(Math.random() * responders.length)];
-                                responder.speak(`💪 📈 🌟!`);
-                            }
-                        }, 2000);
                     }
                 }
                 break;
@@ -750,76 +634,6 @@ class Person {
                     this.stateTime = 0;
                 }
                 break;
-
-            case 'talking':
-                this.stateTime++;
-                if (this.stateTime > 10) {
-                    this.state = 'idle';
-                    this.stateTime = 0;
-                    this.interactionPartner = null;
-                }
-                break;
-        }
-    }
-
-    // Override wander method to keep analysts at their desk
-    wander() {
-        // Instead of wandering, just stay at desk and maybe turn or speak
-        const directions = ['up', 'down', 'left', 'right'];
-        this.facingDirection = directions[Math.floor(Math.random() * directions.length)];
-
-        if (Math.random() < 0.3) {
-            const stayMessages = [
-                "💻 📊 🔍",
-                "👀 📈 📉",
-                "🧠 💼 📍",
-                `${this.ticker} 🔄 ⚡`
-            ];
-            this.speak(stayMessages[Math.floor(Math.random() * stayMessages.length)]);
-        }
-    }
-
-    // Override all movement methods to keep analysts at their desks
-    goToTable() {
-        // Stay at desk instead
-        this.speak("💼 📍 🚫");
-    }
-
-    goToCoffee() {
-        // Stay at desk instead
-        this.speak("☕ 💭 💻");
-    }
-
-    goToWindow() {
-        // Stay at desk instead
-        this.speak("👁️ 📊 💻");
-    }
-
-    goToDesk() {
-        // Instead of walking, just teleport to desk
-        this.x = this.desk.x;
-        this.y = this.desk.y;
-        this.state = 'idle';
-        this.path = [];
-        this.facingDirection = 'up';
-    }
-
-    findInteraction() {
-        // Instead of moving to interact, just speak to the office
-        const possiblePartners = people.filter(p => p !== this && !p.isFetching);
-        if (possiblePartners.length > 0) {
-            const partner = possiblePartners[Math.floor(Math.random() * possiblePartners.length)];
-            this.speak(`👋 ${partner.ticker} 📊?`);
-
-            // Set a timer for them to respond
-            setTimeout(() => {
-                if (!partner.isFetching) {
-                    partner.speak(`👍 ${this.ticker}! 🔍 📈 ✨`);
-                }
-            }, 1500);
-        } else {
-            // Just talk to the office in general
-            this.speak("👥 👀 📈?");
         }
     }
 
@@ -827,13 +641,8 @@ class Person {
         debugLog(`${this.name} starting to fetch data`);
         this.isFetching = true;
         this.speak("Analyzing the market");
-
-        if (this.x !== this.desk.x || this.y !== this.desk.y) {
-            this.setDestination(this.desk.x, this.desk.y);
-        }
-
+        this.facingDirection = 'up';
         updateSyncStatus(`${this.name} performing analysis...`);
-
         this.reasoningText = '';
     }
 
@@ -876,180 +685,15 @@ class Person {
         }, REASONING_DISPLAY_TIME);
     }
 
-    findTableLocation() {
-        // Get table center coordinates
-        const tableCenterX = Math.floor(COLS / 2);
-        const tableCenterY = Math.floor(ROWS / 2);
-        const tableWidth = 4;
-        const tableHeight = 2;
-
-        // Find empty cells around the table
-        const tableCells = [];
-
-        // Check cells along the perimeter of the table
-        for (let dx = -Math.floor(tableWidth / 2) - 1; dx <= Math.ceil(tableWidth / 2); dx++) {
-            for (let dy = -Math.floor(tableHeight / 2) - 1; dy <= Math.ceil(tableHeight / 2); dy++) {
-                // Only consider cells that are exactly adjacent to the table
-                const isTableAdjacent =
-                    (dx === -Math.floor(tableWidth / 2) - 1 && dy >= -Math.floor(tableHeight / 2) && dy < Math.ceil(tableHeight / 2)) ||
-                    (dx === Math.ceil(tableWidth / 2) && dy >= -Math.floor(tableHeight / 2) && dy < Math.ceil(tableHeight / 2)) ||
-                    (dy === -Math.floor(tableHeight / 2) - 1 && dx >= -Math.floor(tableWidth / 2) && dx < Math.ceil(tableWidth / 2)) ||
-                    (dy === Math.ceil(tableHeight / 2) && dx >= -Math.floor(tableWidth / 2) && dx < Math.ceil(tableWidth / 2));
-
-                if (isTableAdjacent) {
-                    const x = tableCenterX + dx;
-                    const y = tableCenterY + dy;
-                    if (isWalkable(x, y)) {
-                        tableCells.push({ x, y });
-                    }
-                }
+    // Method for dog interaction - simplified but preserved
+    petDog() {
+        if (dog.isPettable(this)) {
+            if (dog.getPetBy(this)) {
+                this.state = 'idle';
+                this.speak("🐶 ❤️ !");
+                return true;
             }
         }
-
-        // If we found valid cells, return a random one
-        if (tableCells.length > 0) {
-            return tableCells[Math.floor(Math.random() * tableCells.length)];
-        }
-
-        // Fallback to a position near the center if no valid cells
-        return { x: tableCenterX + 3, y: tableCenterY + 3 };
-    }
-
-    goToTable() {
-        const tablePos = this.findTableLocation();
-        this.setDestination(tablePos.x, tablePos.y);
-        this.state = 'walking';
-        this.speak('Going to take a break at the table');
-    }
-
-    findCoffeeLocation() {
-        // Coffee machine is located slightly to the right of center
-        const coffeeCenterX = Math.floor(COLS / 2) + 3.5;
-        const coffeeCenterY = Math.floor(ROWS / 2) - 0.5;
-        const coffeeWidth = 2;
-        const coffeeHeight = 2;
-
-        // Find empty cells around the coffee machine
-        const coffeeCells = [];
-
-        // Check cells along the perimeter of the coffee machine
-        for (let dx = -coffeeWidth / 2 - 1; dx <= coffeeWidth / 2; dx++) {
-            for (let dy = -coffeeHeight / 2 - 1; dy <= coffeeHeight / 2; dy++) {
-                // Only consider cells that are exactly adjacent to the coffee machine
-                const isCoffeeAdjacent =
-                    (dx === -coffeeWidth / 2 - 1 && dy >= -coffeeHeight / 2 && dy < coffeeHeight / 2) ||
-                    (dx === coffeeWidth / 2 && dy >= -coffeeHeight / 2 && dy < coffeeHeight / 2) ||
-                    (dy === -coffeeHeight / 2 - 1 && dx >= -coffeeWidth / 2 && dx < coffeeWidth / 2) ||
-                    (dy === coffeeHeight / 2 && dx >= -coffeeWidth / 2 && dx < coffeeWidth / 2);
-
-                if (isCoffeeAdjacent) {
-                    const x = Math.floor(coffeeCenterX + dx);
-                    const y = Math.floor(coffeeCenterY + dy);
-                    if (isWalkable(x, y)) {
-                        coffeeCells.push({ x, y });
-                    }
-                }
-            }
-        }
-
-        // If we found valid cells, return a random one
-        if (coffeeCells.length > 0) {
-            return coffeeCells[Math.floor(Math.random() * coffeeCells.length)];
-        }
-
-        // Fallback to a position near the coffee machine if no valid cells
-        return { x: Math.floor(coffeeCenterX) + 2, y: Math.floor(coffeeCenterY) + 2 };
-    }
-
-    goToCoffee() {
-        const coffeePos = this.findCoffeeLocation();
-        this.setDestination(coffeePos.x, coffeePos.y);
-        this.state = 'walking';
-        this.speak('Need some coffee to stay focused');
-    }
-
-    isNearCoffee() {
-        const coffeeCenterX = Math.floor(COLS / 2) + 3.5;
-        const coffeeCenterY = Math.floor(ROWS / 2) - 0.5;
-        const coffeeWidth = 2;
-        const coffeeHeight = 2;
-
-        // Check if the person is adjacent to the coffee machine
-        for (let dx = -coffeeWidth / 2 - 1; dx <= coffeeWidth / 2; dx++) {
-            for (let dy = -coffeeHeight / 2 - 1; dy <= coffeeHeight / 2; dy++) {
-                const coffeeX = Math.floor(coffeeCenterX + dx);
-                const coffeeY = Math.floor(coffeeCenterY + dy);
-
-                // Check if this is a coffee machine cell
-                const isCoffee = (
-                    dx >= -coffeeWidth / 2 &&
-                    dx < coffeeWidth / 2 &&
-                    dy >= -coffeeHeight / 2 &&
-                    dy < coffeeHeight / 2
-                );
-
-                // If it's a coffee machine cell and the person is adjacent to it
-                if (isCoffee && Math.abs(this.x - coffeeX) <= 1 && Math.abs(this.y - coffeeY) <= 1) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    findWindowLocation() {
-        const windowLocations = [];
-
-        // Check top wall windows
-        for (let x = 3; x < COLS - 3; x += 3) {
-            if (office[0][x] === OBJECTS.WINDOW || office[0][x + 1] === OBJECTS.WINDOW) {
-                // Check the cell below the window
-                if (isWalkable(x, 1)) windowLocations.push({ x, y: 1 });
-                if (isWalkable(x + 1, 1)) windowLocations.push({ x: x + 1, y: 1 });
-            }
-        }
-
-        // Check right wall windows
-        for (let y = 3; y < ROWS - 6; y += 3) {
-            if (office[y][COLS - 1] === OBJECTS.WINDOW || office[y + 1][COLS - 1] === OBJECTS.WINDOW) {
-                // Check the cell to the left of the window
-                if (isWalkable(COLS - 2, y)) windowLocations.push({ x: COLS - 2, y });
-                if (isWalkable(COLS - 2, y + 1)) windowLocations.push({ x: COLS - 2, y: y + 1 });
-            }
-        }
-
-        // If we found valid cells, return a random one
-        if (windowLocations.length > 0) {
-            return windowLocations[Math.floor(Math.random() * windowLocations.length)];
-        }
-
-        // Fallback to a position near a wall if no valid window locations
-        return { x: 1, y: 1 };
-    }
-
-    goToWindow() {
-        const windowPos = this.findWindowLocation();
-        this.setDestination(windowPos.x, windowPos.y);
-        this.state = 'walking';
-        this.speak('Going to get some fresh air');
-    }
-
-    isNearWindow() {
-        // Check if adjacent to a window on the top wall
-        if (this.y === 1) {
-            if (office[0][this.x] === OBJECTS.WINDOW) return true;
-            if (this.x > 0 && office[0][this.x - 1] === OBJECTS.WINDOW) return true;
-            if (this.x < COLS - 1 && office[0][this.x + 1] === OBJECTS.WINDOW) return true;
-        }
-
-        // Check if adjacent to a window on the right wall
-        if (this.x === COLS - 2) {
-            if (office[this.y][COLS - 1] === OBJECTS.WINDOW) return true;
-            if (this.y > 0 && office[this.y - 1][COLS - 1] === OBJECTS.WINDOW) return true;
-            if (this.y < ROWS - 1 && office[this.y + 1][COLS - 1] === OBJECTS.WINDOW) return true;
-        }
-
         return false;
     }
 }

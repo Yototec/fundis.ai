@@ -1122,6 +1122,9 @@ function update() {
     for (const person of people) {
         person.update();
     }
+    
+    // Update the dog
+    dog.update();
 }
 
 function draw() {
@@ -1192,22 +1195,8 @@ function connectToApi() {
         // Global variable to store combined results
         window.combinedAnalysisResults = '';
 
-        // Stop whatever analysts are doing and send them to their desks
+        // Force all analysts to be at their desks
         if (eventAnalyst && sentimentAnalyst && marketAnalyst && quantAnalyst) {
-            // Force Event Analyst to go to desk and start analyzing
-            eventAnalyst.state = 'walking';
-            eventAnalyst.goToDesk();
-
-            // Other analysts go to desk but don't start yet
-            sentimentAnalyst.state = 'walking';
-            sentimentAnalyst.goToDesk();
-
-            marketAnalyst.state = 'walking';
-            marketAnalyst.goToDesk();
-
-            quantAnalyst.state = 'walking';
-            quantAnalyst.goToDesk();
-
             // Start the sequential analysis process with Event Agent
             // Pass a callback that will start Sentiment Agent when Event Agent finishes
             setTimeout(() => {
@@ -1542,19 +1531,8 @@ function processQueue() {
 
     const person = people.find(p => p.ticker.toLowerCase() === ticker);
     if (person) {
-        if (person.x === person.desk.x && person.y === person.desk.y) {
-            person.startFetching();
-            fetchReasoningData(ticker, hasNewData, symbol);
-        } else {
-            person.goToDesk();
-            const checkInterval = setInterval(() => {
-                if (person.x === person.desk.x && person.y === person.desk.y) {
-                    clearInterval(checkInterval);
-                    person.startFetching();
-                    fetchReasoningData(ticker, hasNewData, symbol);
-                }
-            }, 500);
-        }
+        person.startFetching();
+        fetchReasoningData(ticker, hasNewData, symbol);
     } else {
         debugLog(`No person for ticker: ${ticker}`);
         currentFetchingTicker = null;
@@ -2242,27 +2220,16 @@ if (originalFindInteraction) {
 if (Person.prototype.wander) {
     const originalBaseWander = Person.prototype.wander;
     Person.prototype.wander = function() {
-        if (typeof originalBaseWander === 'function') {
-            // 20% chance to try to find the dog instead of random wandering
-            if (Math.random() < 0.2) {
-                this.setDestination(dog.x, dog.y);
-                this.speak("🐶 👀 ?");
-            } else {
-                // Call the original wander but make sure any speech in it uses symbols
-                originalBaseWander.call(this);
-                
-                // Speak a random emoji message after wandering
-                if (Math.random() < 0.3) {
-                    const wanderEmojis = [
-                        "💹 📊 🔍",
-                        "📈 🧮 ⚡",
-                        "💻 ⚙️ 👀",
-                        "🔢 💯 !",
-                        "@# 💼 ?"
-                    ];
-                    this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
-                }
-            }
+        // Just speak a random emoji message 
+        if (Math.random() < 0.3) {
+            const wanderEmojis = [
+                "💹 📊 🔍",
+                "📈 🧮 ⚡",
+                "💻 ⚙️ 👀",
+                "🔢 💯 !",
+                "@# 💼 ?"
+            ];
+            this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
         }
     };
 }

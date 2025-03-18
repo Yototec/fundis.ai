@@ -309,8 +309,7 @@ class Dog {
             drawSpeechBubble(
                 x + GRID_SIZE / 2,
                 y - 10,
-                this.messageText,
-                100
+                this.messageText
             );
         }
     }
