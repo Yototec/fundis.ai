@@ -248,9 +248,21 @@ class Dog {
 
         // Fix: Improved detection of barking animations
         const isBarking = this.messageTime > 0 && (
-            this.messageText.includes("Woof") ||
-            this.messageText.includes("Bark") ||
-            this.messageText.includes("Arf")
+            this.messageText.includes("🐶 ❗") ||
+            this.messageText.includes("🐕 ⁉️") ||
+            this.messageText.includes("🐾 💫 ✨") ||
+            this.messageText.includes("🐩 😊 ✨") ||
+            this.messageText.includes("🐶 🎯 ❗") ||
+            this.messageText.includes("🐕‍🦺 ⚡ ✨") ||
+            this.messageText.includes("🐾 🐾 ❗") ||
+            this.messageText.includes("🐶 💫 🌟") ||
+            this.messageText.includes("🐕 ❤️ ✨") ||
+            this.messageText.includes("👅 🐾 ❗") ||
+            this.messageText.includes("🐶 👋 ✨") ||
+            this.messageText.includes("🐕 😄 ⭐") ||
+            this.messageText.includes("🐩 ✨ 🌟") ||
+            this.messageText.includes("👂 🐕 ⚡") ||
+            this.messageText.includes("🐶 ⬆️ ❗")
         );
 
         if (isBarking) {
@@ -305,21 +317,21 @@ class Dog {
 
     woof() {
         const woofs = [
-            "Woof!",
-            "Bark!",
-            "*wags tail happily*",
-            "*happy panting*",
-            "Arf!",
-            "*excited tail wagging*",
-            "*playful bark*",
-            "*rolls over*",
-            "*looks at you lovingly*",
-            "*licks hand*",
-            "*nuzzles analyst*",
-            "*doge smile*",
-            "*happy Shiba noises*",
-            "*ears perk up*",
-            "*jumps excitedly*"
+            "🐶 ❗",
+            "🐕 ⁉️",
+            "🐾 💫 ✨",
+            "🐩 😊 ✨",
+            "🐶 🎯 ❗",
+            "🐕‍🦺 ⚡ ✨",
+            "🐾 🐾 ❗",
+            "🐶 💫 🌟",
+            "🐕 ❤️ ✨",
+            "👅 🐾 ❗",
+            "🐶 👋 ✨",
+            "🐕 😄 ⭐",
+            "🐩 ✨ 🌟",
+            "👂 🐕 ⚡",
+            "🐶 ⬆️ ❗"
         ];
         this.messageText = woofs[Math.floor(Math.random() * woofs.length)];
         this.messageTime = 60;
@@ -340,22 +352,22 @@ class Dog {
 
     cuteBark() {
         const cuteBarks = [
-            "Woof woof!",
-            "Arf arf!",
-            "*sniffs curiously*",
-            "*tilts head*",
-            "*happy shiba smile*",
-            "*perks ears up*",
-            "*watches analysts intently*",
-            "*looks for treats*",
-            "*does a little spin*",
-            "*sits patiently*",
-            "*gives puppy eyes*",
-            "*play bow invitation*",
-            "*soft whine for attention*",
-            "*sneezes cutely*",
-            "*shakes fur*",
-            "*zoomies around office*"
+            "🐶 🐶 ❗",
+            "🐾 💫 ❗",
+            "👃 🔍 ✨",
+            "🐕 ❓ 🤔",
+            "🐶 😊 🌟",
+            "👂 🐩 ⬆️",
+            "👀 💼 👥",
+            "🦴 👀 ❓",
+            "🐕 🔄 💫",
+            "🐩 🪑 ✨",
+            "🐶 👁️ 🥺",
+            "🐕 🙇‍♂️ 🎮",
+            "🐾 🔊 ❗",
+            "🐶 🤧 ✨",
+            "🐕‍🦺 💨 🌀",
+            "🐾 💨 💨"
         ];
         this.messageText = cuteBarks[Math.floor(Math.random() * cuteBarks.length)];
         this.messageTime = 60;
