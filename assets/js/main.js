@@ -80,6 +80,11 @@ let isTaskInProgress = false;
 let combinedAnalysisResults = null;
 let analysisCompleted = false; // Track if the combined analysis is completed
 
+// Add these variables near the top with other global variable declarations
+let activeTimers = [];
+let abortControllers = [];
+let analysisInProgress = false;
+
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
     const gridHeightPx = ROWS * GRID_SIZE;
@@ -1190,7 +1195,30 @@ function connectToApi() {
 
         debugLog(`Connecting with API key, symbol: ${selectedSymbol}, and endBlock: ${endBlock}`);
 
+        // Clear any previous state first
+        // Cancel all active timers
+        while (activeTimers.length > 0) {
+            const timer = activeTimers.pop();
+            clearTimeout(timer);
+        }
+        
+        // Abort any ongoing fetch requests
+        while (abortControllers.length > 0) {
+            const controller = abortControllers.pop();
+            try {
+                controller.abort();
+            } catch (e) {
+                console.error("Error aborting fetch:", e);
+            }
+        }
+        
+        // Reset analysis flags
         apiConnected = true;
+        analysisInProgress = true;
+        isTaskInProgress = true;
+        combinedAnalysisResults = null;
+        analysisCompleted = false;
+        
         updateConnectionStatus(true);
 
         // Update terminal content to show analyst is in action
@@ -1201,7 +1229,6 @@ function connectToApi() {
         }
 
         // Disable random tasks for all agents
-        isTaskInProgress = true;
         clearTimeout(taskScheduleTimer);
 
         // Reset any ongoing tasks
@@ -1209,9 +1236,10 @@ function connectToApi() {
         currentFetchingTicker = null;
 
         // Start animation
-        if (!animationTimer) {
-            animationTimer = setInterval(animate, ANIMATION_SPEED);
+        if (animationTimer) {
+            clearInterval(animationTimer);
         }
+        animationTimer = setInterval(animate, ANIMATION_SPEED);
 
         // Find the Event and Sentiment Analysts
         const eventAnalyst = people.find(p => p.ticker.toLowerCase() === 'event');
@@ -1226,7 +1254,19 @@ function connectToApi() {
         if (eventAnalyst && sentimentAnalyst && marketAnalyst && quantAnalyst) {
             // Start the sequential analysis process with Event Agent
             // Pass a callback that will start Sentiment Agent when Event Agent finishes
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+                // Remove this timer from tracking when it fires
+                const index = activeTimers.indexOf(timer);
+                if (index !== -1) {
+                    activeTimers.splice(index, 1);
+                }
+                
+                // Only start if we're still connected
+                if (!apiConnected) {
+                    debugLog("Connection lost before starting analysis");
+                    return;
+                }
+                
                 startSequentialAnalysis(
                     eventAnalyst,
                     selectedSymbol,
@@ -1237,7 +1277,7 @@ function connectToApi() {
                     () => {
                         // After Event Agent finishes, start Sentiment Agent
                         // Update terminal message for Sentiment Analyst
-                        if (terminalContent) {
+                        if (terminalContent && apiConnected) {
                             terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
 <div class="terminal-instructions">Sentiment Analyst is analyzing ${selectedSymbol}...</div>`;
                             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
@@ -1253,7 +1293,7 @@ function connectToApi() {
                             () => {
                                 // After Sentiment Agent finishes, start Market Agent
                                 // Update terminal message for Market Analyst
-                                if (terminalContent) {
+                                if (terminalContent && apiConnected) {
                                     terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
 <div class="terminal-instructions">Market Analyst is analyzing ${selectedSymbol}...</div>`;
                                     terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
@@ -1269,7 +1309,7 @@ function connectToApi() {
                                     () => {
                                         // After Market Agent finishes, start Quant Agent
                                         // Update terminal message for Quant Analyst
-                                        if (terminalContent) {
+                                        if (terminalContent && apiConnected) {
                                             terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
 <div class="terminal-instructions">Quant Analyst is analyzing ${selectedSymbol}...</div>`;
                                             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
@@ -1285,7 +1325,9 @@ function connectToApi() {
                                             () => {
                                                 // After all analysts have completed their individual analyses
                                                 // Start the combined analysis
-                                                performCombinedAnalysis(selectedSymbol, apiKey, endBlock);
+                                                if (apiConnected) {
+                                                    performCombinedAnalysis(selectedSymbol, apiKey, endBlock);
+                                                }
                                             }
                                         );
                                     }
@@ -1295,6 +1337,9 @@ function connectToApi() {
                     }
                 );
             }, 1000);
+            
+            // Add to tracked timers
+            activeTimers.push(timer);
         }
 
         // Disable other analysts from speaking except those who are analyzing
@@ -1457,6 +1502,12 @@ function formatAnalystData(data) {
 
 // Updated function to handle sequential analysis with callback
 function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisType, endBlock, onCompleteCallback) {
+    // Skip if analysis isn't in progress anymore (disconnect was triggered)
+    if (!apiConnected) {
+        debugLog("Sequential analysis aborted - disconnected");
+        return;
+    }
+    
     // Calculate chunk ranges based on endBlock
     const chunkSize = 50;
     const startBlock = Math.max(0, endBlock - 200);
@@ -1478,6 +1529,12 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
 
     // Process chunks sequentially
     function processNextChunk() {
+        // Skip if analysis isn't in progress anymore (disconnect was triggered)
+        if (!apiConnected) {
+            debugLog(`${analystName} analysis aborted - disconnected`);
+            return;
+        }
+        
         if (currentChunk >= chunks.length) {
             // All chunks processed
             updateSyncStatus(`${analystName} analysis complete!`);
@@ -1511,11 +1568,20 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             analyst.state = 'idle';
 
             // If there's a callback, execute it
-            if (onCompleteCallback) {
-                setTimeout(() => {
+            if (onCompleteCallback && apiConnected) {
+                const timer = setTimeout(() => {
+                    // Remove this timer from tracking
+                    const index = activeTimers.indexOf(timer);
+                    if (index !== -1) {
+                        activeTimers.splice(index, 1);
+                    }
+                    
                     // If starting next analyst, don't set isTaskInProgress to false yet
                     onCompleteCallback();
                 }, 1000);
+                
+                // Add to tracked timers
+                activeTimers.push(timer);
             } else {
                 // If this is the last analyst, set isTaskInProgress to false
                 isTaskInProgress = false;
@@ -1558,13 +1624,31 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
         }
 
         // Simulate API call with setTimeout
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+            // Remove this timer from tracking
+            const index = activeTimers.indexOf(timer);
+            if (index !== -1) {
+                activeTimers.splice(index, 1);
+            }
+            
+            // Skip if we've disconnected
+            if (!apiConnected) {
+                debugLog(`${analystName} analysis of chunk ${currentChunk} aborted - disconnected`);
+                return;
+            }
+            
             // Construct the API URL
             const apiUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=${summaryType}&chunk_start=${chunk.start}&chunk_end=${chunk.end}&api_key=${apiKey}`;
 
             // Make the API call
             fetchDataFromApi(apiUrl, symbol, chunk.start, chunk.end)
                 .then(result => {
+                    // Check if we've disconnected
+                    if (!apiConnected) {
+                        debugLog(`${analystName} processing of chunk result aborted - disconnected`);
+                        return;
+                    }
+                    
                     // Append result to all results
                     if (result) {
                         if (agentResults) agentResults += '\n\n';
@@ -1576,6 +1660,12 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                     processNextChunk();
                 })
                 .catch(error => {
+                    // Check if we've disconnected
+                    if (!apiConnected) {
+                        debugLog(`${analystName} error handling aborted - disconnected`);
+                        return;
+                    }
+                    
                     console.error("Error fetching data:", error);
                     updateSyncStatus(`Error analyzing blocks ${chunk.start}-${chunk.end}: ${error.message}`);
 
@@ -1584,6 +1674,9 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                     processNextChunk();
                 });
         }, 3000); // 3 second delay to simulate processing time
+        
+        // Add to tracked timers
+        activeTimers.push(timer);
     }
 
     // Start processing the first chunk
@@ -1594,7 +1687,18 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
 async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
     try {
         debugLog(`Fetching data from: ${apiUrl}`);
-        const response = await fetch(apiUrl);
+        
+        // Create an AbortController and add it to the tracking array
+        const controller = new AbortController();
+        abortControllers.push(controller);
+        
+        const response = await fetch(apiUrl, { signal: controller.signal });
+        
+        // Remove this controller from tracking after fetch is complete
+        const index = abortControllers.indexOf(controller);
+        if (index !== -1) {
+            abortControllers.splice(index, 1);
+        }
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -1608,6 +1712,12 @@ async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
             return `No reasoning data found for ${symbol} blocks ${chunkStart}-${chunkEnd}`;
         }
     } catch (error) {
+        // Check if this was an abort error, which is expected during disconnection
+        if (error.name === 'AbortError') {
+            console.log("Fetch aborted due to disconnection");
+            return null;
+        }
+        
         console.error("API call failed:", error);
         return `Error: Failed to fetch data for ${symbol} blocks ${chunkStart}-${chunkEnd}`;
     }
@@ -1615,18 +1725,48 @@ async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
 
 function disconnectFromApi() {
     if (apiConnected) {
+        // Mark disconnection in progress
         apiConnected = false;
         updateConnectionStatus(false);
         stopTaskScheduler();
+        
+        // Stop ongoing analysis
+        analysisInProgress = false;
+        
+        // Cancel all active timers
+        while (activeTimers.length > 0) {
+            const timer = activeTimers.pop();
+            clearTimeout(timer);
+        }
+        
+        // Clear animation timer
+        if (animationTimer) {
+            clearInterval(animationTimer);
+            animationTimer = null;
+        }
+        
+        // Abort any ongoing fetch requests
+        while (abortControllers.length > 0) {
+            const controller = abortControllers.pop();
+            try {
+                controller.abort();
+            } catch (e) {
+                console.error("Error aborting fetch:", e);
+            }
+        }
+        
+        // Reset all state variables
         currentFetchingTicker = null;
         fetchQueue = [];
         isTaskInProgress = false;
         combinedAnalysisResults = null;
-        analysisCompleted = false; // Reset the analysis completion flag
+        analysisCompleted = false;
         
+        // Reset all people
         for (const p of people) {
             p.isFetching = false;
-
+            p.state = 'idle';
+            
             // Restore original speak functionality if it was overridden
             if (p.originalSpeak) {
                 p.speak = p.originalSpeak;
@@ -1634,10 +1774,16 @@ function disconnectFromApi() {
             }
         }
 
-        // Reset the API form
+        // Reset the terminal display to initial form state
         updateTerminalDisplay();
-
-        debugLog("API Disconnected");
+        
+        // Clear any status messages
+        updateSyncStatus("");
+        
+        // Restart animation with clean state
+        start();
+        
+        debugLog("API Disconnected - All processes terminated");
     }
 }
 
@@ -2487,8 +2633,17 @@ if (Person.prototype.goToDesk) {
 // Add this new function after fetchDataFromApi function
 // Function to perform combined analysis after all individual analyses
 function performCombinedAnalysis(symbol, apiKey, endBlock) {
+    // Skip if we're disconnected
+    if (!apiConnected) {
+        debugLog("Combined analysis cancelled - disconnected");
+        return;
+    }
+    
     debugLog("Starting combined analysis");
     updateSyncStatus("All analysts are putting together their analysis...");
+    
+    // Set a flag to indicate analysis is in progress
+    analysisInProgress = true;
     
     // Calculate the chunk range for combined analysis based on endBlock
     const startBlock = Math.max(0, endBlock - 200);
@@ -2521,15 +2676,38 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
     // First fetch the observation data
     fetchDataFromApi(observationUrl, symbol, startBlock, endBlockValue)
         .then(observationResult => {
+            // Check if we've disconnected
+            if (!apiConnected || !analysisInProgress) {
+                debugLog("Combined analysis observation fetch completed but disconnected - aborting");
+                return { observation: null, consideration: null };
+            }
+            
             updateSyncStatus(`Fetching strategic consideration data for blocks ${startBlock}-${endBlockValue}...`);
             
             // Then fetch the consideration data
             return fetchDataFromApi(considerationUrl, symbol, startBlock, endBlockValue)
                 .then(considerationResult => {
+                    // Check again for disconnection
+                    if (!apiConnected || !analysisInProgress) {
+                        debugLog("Combined analysis consideration fetch completed but disconnected - aborting");
+                        return { observation: null, consideration: null };
+                    }
+                    
                     return { observation: observationResult, consideration: considerationResult };
                 });
         })
         .then(results => {
+            // Check if we've disconnected
+            if (!apiConnected || !analysisInProgress) {
+                debugLog("Combined analysis processing cancelled - disconnected");
+                return;
+            }
+            
+            // Skip further processing if results are null (user disconnected)
+            if (!results.observation && !results.consideration) {
+                return;
+            }
+            
             // Format and display the combined results
             debugLog("Combined analysis complete");
             updateSyncStatus("Combined analysis completed successfully!");
@@ -2570,6 +2748,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             
             // Set the flag to indicate analysis is complete
             analysisCompleted = true;
+            analysisInProgress = false;
             
             // Add to the terminal
             if (terminalContent) {
@@ -2595,6 +2774,12 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             scheduleNextTask();
         })
         .catch(error => {
+            // Check if we've disconnected or the error is related to disconnection
+            if (!apiConnected || !analysisInProgress || error.name === 'AbortError') {
+                debugLog("Combined analysis error handling cancelled - disconnected");
+                return;
+            }
+            
             console.error("Error during combined analysis:", error);
             updateSyncStatus("Error during combined analysis: " + error.message);
             
@@ -2607,6 +2792,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             
             // Reset task status
             isTaskInProgress = false;
+            analysisInProgress = false;
             scheduleNextTask();
         });
 }

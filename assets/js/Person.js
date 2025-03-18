@@ -660,6 +660,14 @@ class Person {
         debugLog(`${this.name} displaying reasoning`);
         this.speak("Analysis complete");
 
+        // Check if we're still connected before proceeding
+        if (!apiConnected) {
+            debugLog(`${this.name} reasoning display aborted - disconnected`);
+            this.isFetching = false;
+            this.state = 'idle';
+            return;
+        }
+
         const terminalContent = document.getElementById('terminalContent');
         if (terminalContent) {
             const timestamp = new Date().toLocaleTimeString();
@@ -691,14 +699,21 @@ class Person {
                 `<span style="color: #0f0">[${timestamp}] Analysis completed successfully!</span>\n\n` +
                 formattedReasoning;
 
-            terminalContent.innerHTML = this.reasoningText;
-
-            addToTerminalHistory(`${this.name} completed analysis - NEW INSIGHTS FOUND`);
+            // Only update if we're still connected
+            if (apiConnected) {
+                terminalContent.innerHTML = this.reasoningText;
+                addToTerminalHistory(`${this.name} completed analysis - NEW INSIGHTS FOUND`);
+                updateSyncStatus(`${this.name} finished analysis and found something new!`);
+            }
         }
 
-        updateSyncStatus(`${this.name} finished analysis and found something new!`);
-
         setTimeout(() => {
+            // Check if we're still connected
+            if (!apiConnected) {
+                debugLog(`${this.name} post-reasoning cleanup aborted - disconnected`);
+                return;
+            }
+            
             debugLog(`${this.name} done fetching reasoning`);
             this.isFetching = false;
             currentFetchingTicker = null;
