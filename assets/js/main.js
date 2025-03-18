@@ -1163,47 +1163,160 @@ function connectToApi() {
         apiConnected = true;
         updateConnectionStatus(true);
 
-        // Update terminal content to show analysts are in action
+        // Update terminal content to show analyst is in action
         const terminalContent = document.getElementById('terminalContent');
         if (terminalContent) {
             terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
-<div class="terminal-instructions">Our Analysts are analyzing ${selectedSymbol}. Waiting for the first task to complete...</div>`;
+<div class="terminal-instructions">Event Analyst is analyzing ${selectedSymbol}...</div>`;
         }
 
-        // Initialize and start a task immediately
-        debugLog(`API Connected - Assigning immediate task for ${selectedSymbol}`);
-
-        // Select a random analyst and start them working immediately
-        const tickers = ['event', 'sentiment', 'market', 'quant'];
-        const randomTicker = tickers[Math.floor(Math.random() * tickers.length)];
-        const randomAnalyst = people.find(p => p.ticker.toLowerCase() === randomTicker);
-
-        if (randomAnalyst) {
-            // Stop whatever they're doing and start analysis
-            randomAnalyst.state = 'walking';
-            randomAnalyst.wander = function () { }; // Temporarily disable wandering
-
-            // Force them to go to desk and start analyzing
-            randomAnalyst.goToDesk();
-            randomAnalyst.speak(`Urgent ${selectedSymbol} analysis needed!`);
-
-            // Add to the queue and process immediately
-            fetchQueue.push({ ticker: randomTicker, hasNewData: true, symbol: selectedSymbol });
-            isTaskInProgress = false;
-            currentFetchingTicker = null;
-            processQueue();
-        }
-
-        // Start regular timers
+        // Disable random tasks for all agents
+        isTaskInProgress = true;
+        clearTimeout(taskScheduleTimer);
+        
+        // Reset any ongoing tasks
+        fetchQueue = [];
+        currentFetchingTicker = null;
+        
+        // Start animation
         if (!animationTimer) {
             animationTimer = setInterval(animate, ANIMATION_SPEED);
         }
+        
+        // Find the Event Analyst
+        const eventAnalyst = people.find(p => p.ticker.toLowerCase() === 'event');
+        
+        // Stop whatever the Event Analyst is doing and send to desk
+        if (eventAnalyst) {
+            // Force Event Analyst to go to desk and start analyzing
+            eventAnalyst.state = 'walking';
+            eventAnalyst.goToDesk();
+            
+            // Start the sequential analysis process
+            setTimeout(() => {
+                startSequentialAnalysis(eventAnalyst, selectedSymbol, apiKey);
+            }, 1000);
+        }
+        
+        // Disable other analysts from speaking
+        for (const person of people) {
+            if (person.ticker.toLowerCase() !== 'event') {
+                // Override speak method for other analysts
+                person.originalSpeak = person.speak;
+                person.speak = function() {}; // Empty function to prevent speaking
+                person.state = 'idle';
+            }
+        }
 
-        // Start full task scheduler for future tasks
-        fetchChainData();
-        startTaskScheduler();
+        debugLog(`Started sequential analysis for ${selectedSymbol}`);
+    }
+}
 
-        debugLog(`Immediate ${selectedSymbol} analysis assigned`);
+// New function to handle sequential analysis
+function startSequentialAnalysis(analyst, symbol, apiKey) {
+    // Define the chunks to analyze
+    const chunks = [
+        { start: 0, end: 49 },
+        { start: 50, end: 99 },
+        { start: 100, end: 149 },
+        { start: 150, end: 199 }
+    ];
+    
+    let allResults = '';
+    let currentChunk = 0;
+    
+    // Process chunks sequentially
+    function processNextChunk() {
+        if (currentChunk >= chunks.length) {
+            // All chunks processed
+            updateSyncStatus("Analysis complete!");
+            isTaskInProgress = false;
+            
+            // Display final results
+            const terminalContent = document.getElementById('terminalContent');
+            if (terminalContent) {
+                terminalContent.innerHTML = `<strong>=== Event Analyst Analysis Results ===</strong>\n\n${allResults}`;
+            }
+            
+            // Reset the analyst state
+            analyst.isFetching = false;
+            analyst.state = 'idle';
+            return;
+        }
+        
+        const chunk = chunks[currentChunk];
+        const message = `Analyzing ${symbol} events from block ${chunk.start} to block ${chunk.end}...`;
+        
+        // Show the message in the terminal
+        updateSyncStatus(message);
+        analyst.speak(message);
+        analyst.isFetching = true;
+        analyst.state = 'working';
+        
+        // Update terminal to show progress
+        const terminalContent = document.getElementById('terminalContent');
+        if (terminalContent) {
+            let content = `<strong>=== Event Analyst Analysis ===</strong>\n\n`;
+            content += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] ${message}</span>\n\n`;
+            if (allResults) {
+                content += `<strong>Previous Results:</strong>\n${allResults}\n`;
+            }
+            terminalContent.innerHTML = content;
+        }
+        
+        // Simulate API call with setTimeout
+        setTimeout(() => {
+            // Construct the API URL
+            const apiUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=initial_market_analysis&chunk_start=${chunk.start}&chunk_end=${chunk.end}&api_key=${apiKey}`;
+            
+            // Make the API call
+            fetchDataFromApi(apiUrl, symbol, chunk.start, chunk.end)
+                .then(result => {
+                    // Append result to all results
+                    if (result) {
+                        if (allResults) allResults += '\n\n';
+                        allResults += `<strong>Block ${chunk.start}-${chunk.end}:</strong>\n${result}`;
+                    }
+                    
+                    // Move to next chunk
+                    currentChunk++;
+                    processNextChunk();
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                    updateSyncStatus(`Error analyzing blocks ${chunk.start}-${chunk.end}: ${error.message}`);
+                    
+                    // Move to next chunk despite error
+                    currentChunk++;
+                    processNextChunk();
+                });
+        }, 3000); // 3 second delay to simulate processing time
+    }
+    
+    // Start processing the first chunk
+    processNextChunk();
+}
+
+// Function to fetch data from API
+async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
+    try {
+        debugLog(`Fetching data from: ${apiUrl}`);
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.reasoning) {
+            return data.reasoning;
+        } else {
+            return `No reasoning data found for ${symbol} blocks ${chunkStart}-${chunkEnd}`;
+        }
+    } catch (error) {
+        console.error("API call failed:", error);
+        return `Error: Failed to fetch data for ${symbol} blocks ${chunkStart}-${chunkEnd}`;
     }
 }
 
@@ -1217,6 +1330,12 @@ function disconnectFromApi() {
         isTaskInProgress = false;
         for (const p of people) {
             p.isFetching = false;
+            
+            // Restore original speak functionality if it was overridden
+            if (p.originalSpeak) {
+                p.speak = p.originalSpeak;
+                p.originalSpeak = null;
+            }
         }
 
         // Reset the connect button text
