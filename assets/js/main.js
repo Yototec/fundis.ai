@@ -1122,7 +1122,7 @@ function update() {
     for (const person of people) {
         person.update();
     }
-    
+
     // Update the dog
     dog.update();
 }
@@ -1279,6 +1279,104 @@ function connectToApi() {
     }
 }
 
+function formatAsTable(data) {
+    try {
+        // Parse the data if it's a string
+        const jsonData = typeof data === 'string' ? JSON.parse(data) : data;
+
+        if (!Array.isArray(jsonData)) {
+            return data; // Return original if not an array
+        }
+
+        // Find the maximum length of timestamp and summary for alignment
+        let maxTimestampLength = 'TIMESTAMP'.length;
+        let maxSummaryLength = 'SUMMARY'.length;
+
+        jsonData.forEach(item => {
+            if (item.timestamp && item.timestamp.length > maxTimestampLength) {
+                maxTimestampLength = item.timestamp.length;
+            }
+            if (item.summary && item.summary.length > maxSummaryLength) {
+                maxSummaryLength = item.summary.length;
+            }
+        });
+
+        // Create header row with padding
+        let table = '┌' + '─'.repeat(maxTimestampLength + 2) + '┬' + '─'.repeat(maxSummaryLength + 2) + '┐\n';
+        table += '│ ' + 'TIMESTAMP'.padEnd(maxTimestampLength) + ' │ ' + 'SUMMARY'.padEnd(maxSummaryLength) + ' │\n';
+        table += '├' + '─'.repeat(maxTimestampLength + 2) + '┼' + '─'.repeat(maxSummaryLength + 2) + '┤\n';
+
+        // Add data rows
+        jsonData.forEach(item => {
+            if (item.timestamp && item.summary) {
+                table += '│ ' + item.timestamp.padEnd(maxTimestampLength) + ' │ ' + item.summary.padEnd(maxSummaryLength) + ' │\n';
+            }
+        });
+
+        // Add bottom border
+        table += '└' + '─'.repeat(maxTimestampLength + 2) + '┴' + '─'.repeat(maxSummaryLength + 2) + '┘\n';
+
+        return table;
+    } catch (error) {
+        console.error("Error formatting data as table:", error);
+        return data; // Return original on error
+    }
+}
+
+// Modified version that handles the specific format of Event Analyst data
+function formatAnalystData(data) {
+    try {
+        // Check if this is Event Analyst data by looking for typical block headers
+        if (typeof data === 'string' &&
+            (data.includes("Block 0-49:") ||
+                data.includes("Block 50-99:") ||
+                data.includes("Block 100-149:") ||
+                data.includes("Block 150-199:"))) {
+
+            // Split the string by block sections
+            const blocks = data.split(/Block \d+-\d+:/g).filter(block => block.trim());
+            let formattedData = "";
+
+            // Get the original block headers
+            const blockHeaders = [];
+            let tempData = data;
+            const blockRegex = /Block \d+-\d+:/g;
+            let match;
+            while ((match = blockRegex.exec(tempData)) !== null) {
+                blockHeaders.push(match[0]);
+            }
+
+            // Process each block
+            blocks.forEach((block, index) => {
+                if (index < blockHeaders.length) {
+                    formattedData += `\n${blockHeaders[index]}\n`;
+                }
+
+                try {
+                    // Extract the JSON array from the block
+                    const jsonMatch = block.match(/\[\s*\{[\s\S]*\}\s*\]/);
+                    if (jsonMatch) {
+                        const jsonData = JSON.parse(jsonMatch[0]);
+                        formattedData += formatAsTable(jsonData);
+                    } else {
+                        formattedData += block; // If no JSON found, keep original
+                    }
+                } catch (e) {
+                    console.error("Error parsing block JSON:", e);
+                    formattedData += block; // On error, keep original
+                }
+            });
+
+            return formattedData;
+        }
+
+        return data; // Return original if not Event Analyst data
+    } catch (error) {
+        console.error("Error formatting Event Analyst data:", error);
+        return data; // Return original on error
+    }
+}
+
 // Updated function to handle sequential analysis with callback
 function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisType, onCompleteCallback) {
     // Define the chunks to analyze
@@ -1301,11 +1399,17 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             // All chunks processed
             updateSyncStatus(`${analystName} analysis complete!`);
 
+            // Format the results as a table for all analysts
+            let formattedResults = agentResults;
+            if (['event', 'sentiment', 'market', 'quant'].includes(analyst.ticker.toLowerCase())) {
+                formattedResults = formatAnalystData(agentResults);
+            }
+
             // Store results in the combined results
             if (window.combinedAnalysisResults) {
                 window.combinedAnalysisResults += '\n\n';
             }
-            window.combinedAnalysisResults += `<strong>=== ${analystName} Analysis Results ===</strong>\n\n${agentResults}`;
+            window.combinedAnalysisResults += `<strong>=== ${analystName} Analysis Results ===</strong>\n\n${formattedResults}`;
 
             // Display combined results
             const terminalContent = document.getElementById('terminalContent');
@@ -1353,7 +1457,12 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
 
             // Show current agent's progress
             if (agentResults) {
-                content += `<strong>Current Progress:</strong>\n${agentResults}\n`;
+                // Format the results as a table for all analysts
+                let formattedResults = agentResults;
+                if (['event', 'sentiment', 'market', 'quant'].includes(analyst.ticker.toLowerCase())) {
+                    formattedResults = formatAnalystData(agentResults);
+                }
+                content += `<strong>Current Progress:</strong>\n${formattedResults}\n`;
             }
 
             terminalContent.innerHTML = content;
@@ -1370,7 +1479,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                     // Append result to all results
                     if (result) {
                         if (agentResults) agentResults += '\n\n';
-                        agentResults += `<strong>Block ${chunk.start}-${chunk.end}:</strong>\n${result}`;
+                        agentResults += `Block ${chunk.start}-${chunk.end}:\n${result}`;
                     }
 
                     // Move to next chunk
@@ -1942,11 +2051,11 @@ people.forEach(person => {
 people.forEach(person => {
     // Store the original speak method
     person.originalTaskSpeak = person.speak;
-    
+
     // Replace with a version that uses symbols/emojis for non-task communication
-    person.speak = function(message) {
+    person.speak = function (message) {
         // If the message contains analysis-related content, use the actual message
-        if (message.includes('Analyzing') || message.includes('analysis') || 
+        if (message.includes('Analyzing') || message.includes('analysis') ||
             this.isFetching || this.state === 'working') {
             person.originalTaskSpeak.call(this, message);
         } else {
@@ -1966,7 +2075,7 @@ people.forEach(person => {
                 "!?...",
                 "$$$ 📊 ⚡"
             ];
-            
+
             const randomSymbols = symbolMessages[Math.floor(Math.random() * symbolMessages.length)];
             person.originalTaskSpeak.call(this, randomSymbols);
         }
@@ -2088,7 +2197,7 @@ let dog = new Dog();
 // Make the dog only speak in emojis/symbols
 if (dog.speak) {
     dog.originalSpeak = dog.speak;
-    dog.speak = function(message) {
+    dog.speak = function (message) {
         // Only use emoji messages for the dog
         const dogEmojis = [
             "🐶 !!",
@@ -2196,7 +2305,7 @@ Person.prototype.wander = function () {
 
 const originalFindInteraction = Person.prototype.findInteraction;
 if (originalFindInteraction) {
-    Person.prototype.findInteraction = function() {
+    Person.prototype.findInteraction = function () {
         // Instead of moving to interact with words, just use symbols/emojis
         const possiblePartners = people.filter(p => p !== this && !p.isFetching);
         if (possiblePartners.length > 0) {
@@ -2219,7 +2328,7 @@ if (originalFindInteraction) {
 // Override any methods that would use English phrases
 if (Person.prototype.wander) {
     const originalBaseWander = Person.prototype.wander;
-    Person.prototype.wander = function() {
+    Person.prototype.wander = function () {
         // Just speak a random emoji message 
         if (Math.random() < 0.3) {
             const wanderEmojis = [
@@ -2237,7 +2346,7 @@ if (Person.prototype.wander) {
 // Override other methods that might use speech
 if (Person.prototype.goToTable) {
     const originalGoToTable = Person.prototype.goToTable;
-    Person.prototype.goToTable = function() {
+    Person.prototype.goToTable = function () {
         originalGoToTable.call(this);
         this.speak("🪑 🍽️ ⏱️");
     };
@@ -2245,7 +2354,7 @@ if (Person.prototype.goToTable) {
 
 if (Person.prototype.goToCoffee) {
     const originalGoToCoffee = Person.prototype.goToCoffee;
-    Person.prototype.goToCoffee = function() {
+    Person.prototype.goToCoffee = function () {
         originalGoToCoffee.call(this);
         this.speak("☕ 🎯 👍");
     };
@@ -2253,7 +2362,7 @@ if (Person.prototype.goToCoffee) {
 
 if (Person.prototype.goToWindow) {
     const originalGoToWindow = Person.prototype.goToWindow;
-    Person.prototype.goToWindow = function() {
+    Person.prototype.goToWindow = function () {
         originalGoToWindow.call(this);
         this.speak("🪟 👀 ✨");
     };
@@ -2261,9 +2370,9 @@ if (Person.prototype.goToWindow) {
 
 if (Person.prototype.goToDesk) {
     const originalGoToDesk = Person.prototype.goToDesk;
-    Person.prototype.goToDesk = function() {
+    Person.prototype.goToDesk = function () {
         originalGoToDesk.call(this);
-        
+
         // Only speak symbols if not doing analysis
         if (!this.isFetching && this.state !== 'working') {
             this.speak("💻 📊 !");

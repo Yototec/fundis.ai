@@ -665,6 +665,11 @@ class Person {
                 formattedReasoning = structuredReasoning;
             }
 
+            // Format data as a table for all analysts
+            if (['event', 'sentiment', 'market', 'quant'].includes(this.ticker.toLowerCase()) && typeof formatAnalystData === 'function') {
+                formattedReasoning = formatAnalystData(formattedReasoning);
+            }
+
             this.reasoningText = `<strong>=== ${this.name} Analysis Results ===</strong>\n` +
                 `<span style="color: #0f0">[${timestamp}] Analysis completed successfully!</span>\n\n` +
                 formattedReasoning;
