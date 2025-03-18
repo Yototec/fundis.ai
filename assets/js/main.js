@@ -1960,11 +1960,46 @@ people.forEach(person => {
     person.facingDirection = 'up';
 });
 
-// Assign random starting activities but all at desk
-people[0].speak('Working on event analysis');
-people[1].speak('Monitoring sentiment data');
-people[2].speak('Tracking market indicators');
-people[3].speak('Running quantitative models');
+// Override the speak method for all analysts to use emojis/symbols when not analyzing
+people.forEach(person => {
+    // Store the original speak method
+    person.originalTaskSpeak = person.speak;
+    
+    // Replace with a version that uses symbols/emojis for non-task communication
+    person.speak = function(message) {
+        // If the message contains analysis-related content, use the actual message
+        if (message.includes('Analyzing') || message.includes('analysis') || 
+            this.isFetching || this.state === 'working') {
+            person.originalTaskSpeak.call(this, message);
+        } else {
+            // For non-task communication, use symbols/emojis instead
+            const symbolMessages = [
+                "✨ 📊 💹",
+                "📈 🔍 ⚡",
+                "🚀 ⭐ 📊",
+                "💯 📉 🔄",
+                "⚙️ 🔢 #@!",
+                "💻 🔮 📝",
+                "🧮 %$#@!",
+                "👀 💹 ⁉️",
+                "🤔 📊 ⁉️",
+                "@#$%!",
+                "?!&*@",
+                "!?...",
+                "$$$ 📊 ⚡"
+            ];
+            
+            const randomSymbols = symbolMessages[Math.floor(Math.random() * symbolMessages.length)];
+            person.originalTaskSpeak.call(this, randomSymbols);
+        }
+    };
+});
+
+// Assign symbolic starting activities for all analysts at desk
+people[0].speak('📊 💹 🔍');
+people[1].speak('📈 ⭐ 🔮');
+people[2].speak('💯 📉 🔄');
+people[3].speak('🧮 🔢 💹');
 
 // Still delay starting the task scheduler to give analysts time to initialize
 // setTimeout(startTaskScheduler, 5000);
@@ -2072,6 +2107,27 @@ function drawWindowClouds(x, y, width, height) {
 // Create a dog instance
 let dog = new Dog();
 
+// Make the dog only speak in emojis/symbols
+if (dog.speak) {
+    dog.originalSpeak = dog.speak;
+    dog.speak = function(message) {
+        // Only use emoji messages for the dog
+        const dogEmojis = [
+            "🐶 !!",
+            "🐕 ❤️ 🦮",
+            "🐾 🐾 🐾",
+            "🦴 🐶 !",
+            "🐕‍🦺 💫 ✨",
+            "🐩 💭 💤",
+            "🐕 #!?",
+            "✨ 🦮 !!",
+            "🐶 ??? 🐾"
+        ];
+        const randomEmoji = dogEmojis[Math.floor(Math.random() * dogEmojis.length)];
+        dog.originalSpeak.call(this, randomEmoji);
+    };
+}
+
 // Modify the update function to include the dog
 function update() {
     for (const person of people) {
@@ -2107,7 +2163,7 @@ Person.prototype.petDog = function () {
         if (dog.getPetBy(this)) {
             this.state = 'pettingDog';
             this.stateTime = 0;
-            this.speak("What a good dog!");
+            this.speak("🐶 ❤️ !");
             return true;
         }
     }
@@ -2124,13 +2180,13 @@ Person.prototype.update = function () {
             this.state = 'idle';
             this.stateTime = 0;
 
-            // Say something nice about the dog
+            // Say something nice about the dog using emojis
             const dogComments = [
-                "Such a good pup!",
-                "Who's a good analyst helper?",
-                "Dogs make the office better",
-                "That was a nice break",
-                "Pets reduce workplace stress"
+                "🐶 ❤️ !",
+                "🐕 👍 ✨",
+                "🐾 😊 ✨",
+                "🐶 🌟 !",
+                "🐕 🦴 🎉"
             ];
             this.speak(dogComments[Math.floor(Math.random() * dogComments.length)]);
         }
@@ -2154,8 +2210,96 @@ Person.prototype.wander = function () {
     // 20% chance to try to find the dog instead of random wandering
     if (Math.random() < 0.2) {
         this.setDestination(dog.x, dog.y);
-        this.speak("Going to see the office dog");
+        this.speak("🐶 👀 ?");
     } else {
         originalIdle.call(this);
     }
 };
+
+const originalFindInteraction = Person.prototype.findInteraction;
+if (originalFindInteraction) {
+    Person.prototype.findInteraction = function() {
+        // Instead of moving to interact with words, just use symbols/emojis
+        const possiblePartners = people.filter(p => p !== this && !p.isFetching);
+        if (possiblePartners.length > 0) {
+            const partner = possiblePartners[Math.floor(Math.random() * possiblePartners.length)];
+            this.speak(`👋 📊 ?`);
+
+            // Set a timer for them to respond
+            setTimeout(() => {
+                if (!partner.isFetching) {
+                    partner.speak(`📈 👍 ✨`);
+                }
+            }, 1500);
+        } else {
+            // Just talk to the office in general
+            this.speak("📊 📈 ❓");
+        }
+    };
+}
+
+// Override any methods that would use English phrases
+if (Person.prototype.wander) {
+    const originalBaseWander = Person.prototype.wander;
+    Person.prototype.wander = function() {
+        if (typeof originalBaseWander === 'function') {
+            // 20% chance to try to find the dog instead of random wandering
+            if (Math.random() < 0.2) {
+                this.setDestination(dog.x, dog.y);
+                this.speak("🐶 👀 ?");
+            } else {
+                // Call the original wander but make sure any speech in it uses symbols
+                originalBaseWander.call(this);
+                
+                // Speak a random emoji message after wandering
+                if (Math.random() < 0.3) {
+                    const wanderEmojis = [
+                        "💹 📊 🔍",
+                        "📈 🧮 ⚡",
+                        "💻 ⚙️ 👀",
+                        "🔢 💯 !",
+                        "@# 💼 ?"
+                    ];
+                    this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
+                }
+            }
+        }
+    };
+}
+
+// Override other methods that might use speech
+if (Person.prototype.goToTable) {
+    const originalGoToTable = Person.prototype.goToTable;
+    Person.prototype.goToTable = function() {
+        originalGoToTable.call(this);
+        this.speak("🪑 🍽️ ⏱️");
+    };
+}
+
+if (Person.prototype.goToCoffee) {
+    const originalGoToCoffee = Person.prototype.goToCoffee;
+    Person.prototype.goToCoffee = function() {
+        originalGoToCoffee.call(this);
+        this.speak("☕ 🎯 👍");
+    };
+}
+
+if (Person.prototype.goToWindow) {
+    const originalGoToWindow = Person.prototype.goToWindow;
+    Person.prototype.goToWindow = function() {
+        originalGoToWindow.call(this);
+        this.speak("🪟 👀 ✨");
+    };
+}
+
+if (Person.prototype.goToDesk) {
+    const originalGoToDesk = Person.prototype.goToDesk;
+    Person.prototype.goToDesk = function() {
+        originalGoToDesk.call(this);
+        
+        // Only speak symbols if not doing analysis
+        if (!this.isFetching && this.state !== 'working') {
+            this.speak("💻 📊 !");
+        }
+    };
+}
