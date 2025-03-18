@@ -1173,37 +1173,69 @@ function connectToApi() {
         // Disable random tasks for all agents
         isTaskInProgress = true;
         clearTimeout(taskScheduleTimer);
-        
+
         // Reset any ongoing tasks
         fetchQueue = [];
         currentFetchingTicker = null;
-        
+
         // Start animation
         if (!animationTimer) {
             animationTimer = setInterval(animate, ANIMATION_SPEED);
         }
-        
-        // Find the Event Analyst
+
+        // Find the Event and Sentiment Analysts
         const eventAnalyst = people.find(p => p.ticker.toLowerCase() === 'event');
-        
-        // Stop whatever the Event Analyst is doing and send to desk
-        if (eventAnalyst) {
+        const sentimentAnalyst = people.find(p => p.ticker.toLowerCase() === 'sentiment');
+
+        // Global variable to store combined results
+        window.combinedAnalysisResults = '';
+
+        // Stop whatever analysts are doing and send them to their desks
+        if (eventAnalyst && sentimentAnalyst) {
             // Force Event Analyst to go to desk and start analyzing
             eventAnalyst.state = 'walking';
             eventAnalyst.goToDesk();
-            
-            // Start the sequential analysis process
+
+            // Sentiment analyst goes to desk but doesn't start yet
+            sentimentAnalyst.state = 'walking';
+            sentimentAnalyst.goToDesk();
+
+            // Start the sequential analysis process with Event Agent
+            // Pass a callback that will start Sentiment Agent when Event Agent finishes
             setTimeout(() => {
-                startSequentialAnalysis(eventAnalyst, selectedSymbol, apiKey);
+                startSequentialAnalysis(
+                    eventAnalyst,
+                    selectedSymbol,
+                    apiKey,
+                    'initial_market_analysis',
+                    'events',
+                    () => {
+                        // Update the terminal message for Sentiment Analyst
+                        if (terminalContent) {
+                            terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">Sentiment Analyst is analyzing ${selectedSymbol}...</div>`;
+                            terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+                        }
+
+                        // After Event Agent finishes, start Sentiment Agent
+                        startSequentialAnalysis(
+                            sentimentAnalyst,
+                            selectedSymbol,
+                            apiKey,
+                            'initial_sentiment_analysis',
+                            'sentiments'
+                        );
+                    }
+                );
             }, 1000);
         }
-        
-        // Disable other analysts from speaking
+
+        // Disable other analysts from speaking except event and sentiment
         for (const person of people) {
-            if (person.ticker.toLowerCase() !== 'event') {
+            if (person.ticker.toLowerCase() !== 'event' && person.ticker.toLowerCase() !== 'sentiment') {
                 // Override speak method for other analysts
                 person.originalSpeak = person.speak;
-                person.speak = function() {}; // Empty function to prevent speaking
+                person.speak = function () { }; // Empty function to prevent speaking
                 person.state = 'idle';
             }
         }
@@ -1212,8 +1244,8 @@ function connectToApi() {
     }
 }
 
-// New function to handle sequential analysis
-function startSequentialAnalysis(analyst, symbol, apiKey) {
+// Updated function to handle sequential analysis with callback
+function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisType, onCompleteCallback) {
     // Define the chunks to analyze
     const chunks = [
         { start: 0, end: 49 },
@@ -1221,63 +1253,91 @@ function startSequentialAnalysis(analyst, symbol, apiKey) {
         { start: 100, end: 149 },
         { start: 150, end: 199 }
     ];
-    
-    let allResults = '';
+
+    let agentResults = '';
     let currentChunk = 0;
-    
+
+    // Get analyst name for display purposes
+    const analystName = analyst.name;
+
     // Process chunks sequentially
     function processNextChunk() {
         if (currentChunk >= chunks.length) {
             // All chunks processed
-            updateSyncStatus("Analysis complete!");
-            isTaskInProgress = false;
-            
-            // Display final results
+            updateSyncStatus(`${analystName} analysis complete!`);
+
+            // Store results in the combined results
+            if (window.combinedAnalysisResults) {
+                window.combinedAnalysisResults += '\n\n';
+            }
+            window.combinedAnalysisResults += `<strong>=== ${analystName} Analysis Results ===</strong>\n\n${agentResults}`;
+
+            // Display combined results
             const terminalContent = document.getElementById('terminalContent');
             if (terminalContent) {
-                terminalContent.innerHTML = `<strong>=== Event Analyst Analysis Results ===</strong>\n\n${allResults}`;
+                terminalContent.innerHTML = window.combinedAnalysisResults;
             }
-            
+
             // Reset the analyst state
             analyst.isFetching = false;
             analyst.state = 'idle';
+
+            // If there's a callback, execute it
+            if (onCompleteCallback) {
+                setTimeout(() => {
+                    // If starting next analyst, don't set isTaskInProgress to false yet
+                    onCompleteCallback();
+                }, 1000);
+            } else {
+                // If this is the last analyst, set isTaskInProgress to false
+                isTaskInProgress = false;
+            }
+
             return;
         }
-        
+
         const chunk = chunks[currentChunk];
-        const message = `Analyzing ${symbol} events from block ${chunk.start} to block ${chunk.end}...`;
-        
+        const message = `Analyzing ${symbol} ${analysisType} from block ${chunk.start} to block ${chunk.end}...`;
+
         // Show the message in the terminal
         updateSyncStatus(message);
         analyst.speak(message);
         analyst.isFetching = true;
         analyst.state = 'working';
-        
+
         // Update terminal to show progress
         const terminalContent = document.getElementById('terminalContent');
         if (terminalContent) {
-            let content = `<strong>=== Event Analyst Analysis ===</strong>\n\n`;
+            let content = `<strong>=== ${analystName} Analysis ===</strong>\n\n`;
             content += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] ${message}</span>\n\n`;
-            if (allResults) {
-                content += `<strong>Previous Results:</strong>\n${allResults}\n`;
+
+            // Show previous agent's results if any
+            if (window.combinedAnalysisResults) {
+                content += `<strong>Previous Results:</strong>\n${window.combinedAnalysisResults}\n\n`;
             }
+
+            // Show current agent's progress
+            if (agentResults) {
+                content += `<strong>Current Progress:</strong>\n${agentResults}\n`;
+            }
+
             terminalContent.innerHTML = content;
         }
-        
+
         // Simulate API call with setTimeout
         setTimeout(() => {
             // Construct the API URL
-            const apiUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=initial_market_analysis&chunk_start=${chunk.start}&chunk_end=${chunk.end}&api_key=${apiKey}`;
-            
+            const apiUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=${summaryType}&chunk_start=${chunk.start}&chunk_end=${chunk.end}&api_key=${apiKey}`;
+
             // Make the API call
             fetchDataFromApi(apiUrl, symbol, chunk.start, chunk.end)
                 .then(result => {
                     // Append result to all results
                     if (result) {
-                        if (allResults) allResults += '\n\n';
-                        allResults += `<strong>Block ${chunk.start}-${chunk.end}:</strong>\n${result}`;
+                        if (agentResults) agentResults += '\n\n';
+                        agentResults += `<strong>Block ${chunk.start}-${chunk.end}:</strong>\n${result}`;
                     }
-                    
+
                     // Move to next chunk
                     currentChunk++;
                     processNextChunk();
@@ -1285,14 +1345,14 @@ function startSequentialAnalysis(analyst, symbol, apiKey) {
                 .catch(error => {
                     console.error("Error fetching data:", error);
                     updateSyncStatus(`Error analyzing blocks ${chunk.start}-${chunk.end}: ${error.message}`);
-                    
+
                     // Move to next chunk despite error
                     currentChunk++;
                     processNextChunk();
                 });
         }, 3000); // 3 second delay to simulate processing time
     }
-    
+
     // Start processing the first chunk
     processNextChunk();
 }
@@ -1302,13 +1362,13 @@ async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
     try {
         debugLog(`Fetching data from: ${apiUrl}`);
         const response = await fetch(apiUrl);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (data && data.reasoning) {
             return data.reasoning;
         } else {
@@ -1330,7 +1390,7 @@ function disconnectFromApi() {
         isTaskInProgress = false;
         for (const p of people) {
             p.isFetching = false;
-            
+
             // Restore original speak functionality if it was overridden
             if (p.originalSpeak) {
                 p.speak = p.originalSpeak;
