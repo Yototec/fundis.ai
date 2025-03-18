@@ -2105,7 +2105,7 @@ function updateTerminalDisplay() {
             <div id="branding">Welcome to Fundis.AI</div>
             <div class="terminal-form">
                 <div class="form-group">
-                    <label for="apiKey">Please input your API Key:</label>
+                    <label for="apiKey">Please input your API Key (<a href="https://sentichain.com/app?tab=APIManagement" target="_blank" style="color: #00FFC8;">Register↗</a>):</label>
                     <input type="text" id="apiKey" class="terminal-input" value="${apiKey}" placeholder="Paste or type your API key here">
                 </div>
                 <div class="form-group">
