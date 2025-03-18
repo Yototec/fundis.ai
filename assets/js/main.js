@@ -1727,24 +1727,21 @@ start();
 
 setupMobileScrolling();
 
-// Immediately assign different starting activities to each person
-people[0].wander(); // Event analyst takes a walk
-people[0].state = 'walking';
-people[0].speak('Taking a walk');
+// Make sure all analysts are at their desks initially
+people.forEach(person => {
+    person.x = person.desk.x;
+    person.y = person.desk.y;
+    person.state = 'idle';
+    person.facingDirection = 'up';
+});
 
-people[1].goToCoffee(); // Sentiment analyst gets coffee
-people[1].state = 'walking';
-people[1].speak('Need some coffee to stay focused');
+// Assign random starting activities but all at desk
+people[0].speak('Working on event analysis');
+people[1].speak('Monitoring sentiment data');
+people[2].speak('Tracking market indicators');
+people[3].speak('Running quantitative models');
 
-people[2].goToTable(); // Market analyst goes to the table
-people[2].state = 'walking';
-people[2].speak('Going to take a break at the table');
-
-people[3].goToWindow(); // Quant analyst goes to the window
-people[3].state = 'walking';
-people[3].speak('Going to get some fresh air');
-
-// Still delay starting the task scheduler to give analysts time to move
+// Still delay starting the task scheduler to give analysts time to initialize
 // setTimeout(startTaskScheduler, 5000);
 
 // Helper function for drawing rounded rectangles

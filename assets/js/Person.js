@@ -659,81 +659,53 @@ class Person {
             return;
         }
 
+        // Make sure analysts are at their desk if they aren't already
+        if (this.x !== this.desk.x || this.y !== this.desk.y) {
+            this.goToDesk();
+            return;
+        }
+
         switch (this.state) {
             case 'idle':
                 this.stateTime++;
                 if (this.stateTime > 10) {
                     this.stateTime = 0;
                     const rand = Math.random();
-                    if (rand < 0.15) {
-                        this.goToDesk();
-                    } else if (rand < 0.3) {
-                        this.wander();
-                        this.state = 'walking';
-                        this.speak('Taking a walk');
-                    } else if (rand < 0.5) {
-                        this.findInteraction();
-                    } else if (rand < 0.65) {
-                        this.goToTable();
-                    } else if (rand < 0.8) {
-                        this.goToCoffee();
-                    } else {
-                        this.goToWindow();
-                    }
-                }
-                break;
 
-            case 'walking':
-                if (this.path.length > 0) {
-                    const nextPoint = this.path.shift();
-                    this.x = nextPoint.x;
-                    this.y = nextPoint.y;
-                } else {
-                    this.state = 'idle';
-                    this.stateTime = 0;
-                    if (this.x === this.desk.x && this.y === this.desk.y) {
+                    // Modified behavior - only desk activities and turning are allowed
+                    if (rand < 0.4) {
+                        // Start working
                         this.state = 'working';
                         this.stateTime = 0;
                         this.speak('Reviewing data');
-                    } else if (this.interactionPartner) {
-                        const partner = people.find(p => p.name === this.interactionPartner);
-                        if (partner && this.isAdjacentTo(partner)) {
-                            this.interact(partner);
-                        } else {
-                            this.interactionPartner = null;
-                        }
-                    } else if (this.isNearTable()) {
-                        this.state = 'resting';
-                        this.stateTime = 0;
-                        this.speak('Taking a breather');
-                        // Face the table
-                        const tableCenterX = Math.floor(COLS / 2);
-                        const tableCenterY = Math.floor(ROWS / 2);
-                        if (this.x < tableCenterX) this.facingDirection = 'right';
-                        else if (this.x > tableCenterX) this.facingDirection = 'left';
-                        else if (this.y < tableCenterY) this.facingDirection = 'down';
-                        else this.facingDirection = 'up';
-                    } else if (this.isNearCoffee()) {
-                        this.state = 'makingCoffee';
-                        this.stateTime = 0;
-                        this.speak('Making a coffee');
-                        // Face the coffee machine
-                        const coffeeCenterX = Math.floor(COLS / 2) + 3;
-                        const coffeeCenterY = Math.floor(ROWS / 2) - 1;
-                        if (this.x < coffeeCenterX) this.facingDirection = 'right';
-                        else if (this.x > coffeeCenterX + 1) this.facingDirection = 'left';
-                        else if (this.y < coffeeCenterY) this.facingDirection = 'down';
-                        else if (this.y > coffeeCenterY + 1) this.facingDirection = 'up';
-                    } else if (this.isNearWindow()) {
-                        this.state = 'takingFreshAir';
-                        this.stateTime = 0;
-                        this.speak('Enjoying the view');
-                        // Face the window
-                        if (this.y === 1) {
-                            this.facingDirection = 'up'; // Top window
-                        } else if (this.x === COLS - 2) {
-                            this.facingDirection = 'right'; // Right window
-                        }
+                        this.facingDirection = 'up';
+                    } else if (rand < 0.7) {
+                        // Random turning
+                        const directions = ['up', 'down', 'left', 'right'];
+                        this.facingDirection = directions[Math.floor(Math.random() * directions.length)];
+
+                        // Say something about looking around
+                        const lookMessages = [
+                            "Checking the office",
+                            "Looking around",
+                            "Taking a moment",
+                            "Stretching a bit",
+                            `Monitoring ${this.ticker} signals`
+                        ];
+                        this.speak(lookMessages[Math.floor(Math.random() * lookMessages.length)]);
+                    } else {
+                        // Virtual interaction - they speak as if talking to others, but don't move
+                        this.speak(`Hey everyone, what's the latest on ${this.ticker}?`);
+
+                        // Set a timer for someone else to respond
+                        setTimeout(() => {
+                            // Find a random other person to respond
+                            const responders = people.filter(p => p !== this && !p.isFetching);
+                            if (responders.length > 0) {
+                                const responder = responders[Math.floor(Math.random() * responders.length)];
+                                responder.speak(`Looking strong, ${this.name}!`);
+                            }
+                        }, 2000);
                     }
                 }
                 break;
@@ -754,260 +726,67 @@ class Person {
                     this.interactionPartner = null;
                 }
                 break;
-
-            case 'resting':
-                this.stateTime++;
-                if (this.stateTime > 12) {
-                    this.state = 'idle';
-                    this.stateTime = 0;
-
-                    // Occasionally say something when finished resting
-                    if (Math.random() < 0.6) {
-                        const restingComments = [
-                            "That was refreshing",
-                            "Back to work now",
-                            "Feeling recharged",
-                            "That was a good break",
-                            "Time to be productive again"
-                        ];
-                        this.speak(restingComments[Math.floor(Math.random() * restingComments.length)]);
-                    }
-                } else if (this.stateTime === 6 && Math.random() < 0.4) {
-                    // Occasionally say something while resting
-                    const tableComments = [
-                        "This market never sleeps",
-                        "Sometimes you need a moment to think",
-                        "The office view is nice today",
-                        "I should grab coffee next",
-                        `${this.ticker} analysis is tough today`,
-                        "I've been tracking some interesting patterns"
-                    ];
-                    this.speak(tableComments[Math.floor(Math.random() * tableComments.length)]);
-                }
-                break;
-
-            case 'makingCoffee':
-                this.stateTime++;
-                // First phase - making coffee
-                if (this.stateTime === 4) {
-                    this.speak('Coffee brewing...');
-                }
-                // Second phase - drinking coffee
-                else if (this.stateTime === 8) {
-                    const coffeeComments = [
-                        "Ah, that's the good stuff",
-                        "Perfect! Just what I needed",
-                        "Nothing like a fresh cup of coffee",
-                        "This coffee is excellent",
-                        "Caffeine boost initiated"
-                    ];
-                    this.speak(coffeeComments[Math.floor(Math.random() * coffeeComments.length)]);
-                }
-                // Finish coffee break
-                else if (this.stateTime > 12) {
-                    this.state = 'idle';
-                    this.stateTime = 0;
-
-                    // Occasionally say something after coffee
-                    if (Math.random() < 0.5) {
-                        const afterCoffeeComments = [
-                            "Now I can focus better",
-                            "Ready to analyze some data",
-                            "That cleared my mind",
-                            "Now back to crypto analysis",
-                            "Coffee really helps with the market patterns"
-                        ];
-                        this.speak(afterCoffeeComments[Math.floor(Math.random() * afterCoffeeComments.length)]);
-                    }
-                }
-                break;
-
-            case 'takingFreshAir':
-                this.stateTime++;
-                if (this.stateTime === 5) {
-                    const freshAirComments = [
-                        "The fresh air feels nice",
-                        "What a beautiful day outside",
-                        "Taking a moment to clear my thoughts",
-                        "The view helps with perspective",
-                        "Sometimes you need to look outside to see clearly"
-                    ];
-                    this.speak(freshAirComments[Math.floor(Math.random() * freshAirComments.length)]);
-                }
-                // End fresh air break
-                else if (this.stateTime > 12) {
-                    this.state = 'idle';
-                    this.stateTime = 0;
-
-                    // Occasionally say something about market insights when finishing
-                    if (Math.random() < 0.4) {
-                        const marketInsights = [
-                            "I just had a new insight about the market",
-                            "I think I see a pattern now",
-                            "Sometimes distance brings clarity",
-                            `The ${this.ticker} trend is becoming clearer now`,
-                            "Back to work with a fresh perspective"
-                        ];
-                        this.speak(marketInsights[Math.floor(Math.random() * marketInsights.length)]);
-                    }
-                }
-                break;
         }
     }
 
-    isNearTable() {
-        const tableCenterX = Math.floor(COLS / 2);
-        const tableCenterY = Math.floor(ROWS / 2);
-        const tableWidth = 4;
-        const tableHeight = 2;
+    // Override wander method to keep analysts at their desk
+    wander() {
+        // Instead of wandering, just stay at desk and maybe turn or speak
+        const directions = ['up', 'down', 'left', 'right'];
+        this.facingDirection = directions[Math.floor(Math.random() * directions.length)];
 
-        // Check if the person is adjacent to the table
-        for (let dx = -Math.floor(tableWidth / 2) - 1; dx <= Math.ceil(tableWidth / 2); dx++) {
-            for (let dy = -Math.floor(tableHeight / 2) - 1; dy <= Math.ceil(tableHeight / 2); dy++) {
-                const tableX = tableCenterX + dx;
-                const tableY = tableCenterY + dy;
-
-                // Check if this is a table cell
-                const isTable = (
-                    dx >= -Math.floor(tableWidth / 2) &&
-                    dx < Math.ceil(tableWidth / 2) &&
-                    dy >= -Math.floor(tableHeight / 2) &&
-                    dy < Math.ceil(tableHeight / 2)
-                );
-
-                // If it's a table cell and the person is adjacent to it
-                if (isTable && Math.abs(this.x - tableX) <= 1 && Math.abs(this.y - tableY) <= 1) {
-                    return true;
-                }
-            }
+        if (Math.random() < 0.3) {
+            const stayMessages = [
+                "Focused on my analysis",
+                "Monitoring the markets",
+                "Staying at my station",
+                `Tracking ${this.ticker} updates`
+            ];
+            this.speak(stayMessages[Math.floor(Math.random() * stayMessages.length)]);
         }
+    }
 
-        return false;
+    // Override all movement methods to keep analysts at their desks
+    goToTable() {
+        // Stay at desk instead
+        this.speak("I should stay at my desk");
+    }
+
+    goToCoffee() {
+        // Stay at desk instead
+        this.speak("Could use coffee, but I'll stay focused");
+    }
+
+    goToWindow() {
+        // Stay at desk instead
+        this.speak("Better view of the data from here");
     }
 
     goToDesk() {
-        this.setDestination(this.desk.x, this.desk.y);
-        this.state = 'walking';
-        this.speak('Going to my station');
-    }
-
-    wander() {
-        let tries = 0;
-        let validMove = false;
-        while (!validMove && tries < 10) {
-            tries++;
-            const randomX = Math.floor(Math.random() * COLS);
-            const randomY = Math.floor(Math.random() * ROWS);
-            if (isWalkable(randomX, randomY)) {
-                this.setDestination(randomX, randomY);
-                validMove = true;
-            }
-        }
-        if (!validMove) {
-            this.goToDesk();
-        }
-    }
-
-    setDestination(x, y) {
-        this.destination = { x, y };
-        this.path = findPath(this.x, this.y, x, y);
+        // Instead of walking, just teleport to desk
+        this.x = this.desk.x;
+        this.y = this.desk.y;
+        this.state = 'idle';
+        this.path = [];
+        this.facingDirection = 'up';
     }
 
     findInteraction() {
+        // Instead of moving to interact, just speak to the office
         const possiblePartners = people.filter(p => p !== this && !p.isFetching);
         if (possiblePartners.length > 0) {
             const partner = possiblePartners[Math.floor(Math.random() * possiblePartners.length)];
-            this.interactionPartner = partner.name;
-            this.findPathToAdjacent(partner.x, partner.y);
-            this.state = 'walking';
-            this.speak(`Going to talk to ${partner.name}`);
-        } else {
-            this.wander();
-            this.state = 'walking';
-        }
-    }
+            this.speak(`Hey ${partner.name}, how's your analysis going?`);
 
-    findPathToAdjacent(targetX, targetY) {
-        const adjacentCells = [
-            { x: targetX - 1, y: targetY },
-            { x: targetX + 1, y: targetY },
-            { x: targetX, y: targetY - 1 },
-            { x: targetX, y: targetY + 1 }
-        ].filter(cell => isWalkable(cell.x, cell.y));
-        if (adjacentCells.length > 0) {
-            let closestCell = adjacentCells[0];
-            let closestDist = Infinity;
-            for (const cell of adjacentCells) {
-                const dist = Math.abs(cell.x - this.x) + Math.abs(cell.y - this.y);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closestCell = cell;
+            // Set a timer for them to respond
+            setTimeout(() => {
+                if (!partner.isFetching) {
+                    partner.speak(`Going well, ${this.name}! Finding some interesting patterns.`);
                 }
-            }
-            this.setDestination(closestCell.x, closestCell.y);
-        }
-    }
-
-    isAdjacentTo(other) {
-        const dx = Math.abs(this.x - other.x);
-        const dy = Math.abs(this.y - other.y);
-        return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
-    }
-
-    interact(partner) {
-        this.state = 'talking';
-        this.stateTime = 0;
-        // Face each other
-        if (this.x < partner.x) {
-            this.facingDirection = 'right';
-            partner.facingDirection = 'left';
-        } else if (this.x > partner.x) {
-            this.facingDirection = 'left';
-            partner.facingDirection = 'right';
-        } else if (this.y < partner.y) {
-            this.facingDirection = 'down';
-            partner.facingDirection = 'up';
+            }, 1500);
         } else {
-            this.facingDirection = 'up';
-            partner.facingDirection = 'down';
-        }
-
-        if (partner.state !== 'talking' && !partner.isFetching) {
-            partner.state = 'talking';
-            partner.stateTime = 0;
-            partner.interactionPartner = this.name;
-
-            const marketInteractions = [
-                "Market looks volatile today",
-                "Have you seen the latest trend?",
-                "Bullish or bearish?",
-                "Major resistance ahead",
-                "Support levels are holding"
-            ];
-            const tickerComments = {
-                event: ["Major event upcoming", "News cycle is busy", "Event-driven metrics look positive"],
-                sentiment: ["Social sentiment is rising", "Community activity is up", "Sentiment indicators growing"],
-                market: ["Market indicators are strong", "Technical analysis shows support", "Price action is interesting"],
-                quant: ["Quantitative models performing well", "Statistical significance achieved", "Algorithms detecting patterns"]
-            };
-
-            if (Math.random() < 0.5) {
-                this.speak(marketInteractions[Math.floor(Math.random() * marketInteractions.length)]);
-                setTimeout(() => {
-                    if (partner.state === 'talking' && partner.interactionPartner === this.name && !partner.isFetching) {
-                        partner.speak(marketInteractions[Math.floor(Math.random() * marketInteractions.length)]);
-                    }
-                }, 1000);
-            } else {
-                const myComments = tickerComments[this.ticker.toLowerCase()];
-                this.speak(myComments[Math.floor(Math.random() * myComments.length)]);
-                setTimeout(() => {
-                    if (partner.state === 'talking' && partner.interactionPartner === this.name && !partner.isFetching) {
-                        const partnerComments = tickerComments[partner.ticker.toLowerCase()];
-                        partner.speak(partnerComments[Math.floor(Math.random() * partnerComments.length)]);
-                    }
-                }, 1000);
-            }
+            // Just talk to the office in general
+            this.speak("Anyone seeing movement in the markets?");
         }
     }
 
