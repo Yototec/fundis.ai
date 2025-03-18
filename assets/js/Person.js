@@ -666,8 +666,13 @@ class Person {
             }
 
             // Format data as a table for all analysts
-            if (['event', 'sentiment', 'market', 'quant'].includes(this.ticker.toLowerCase()) && typeof formatAnalystData === 'function') {
-                formattedReasoning = formatAnalystData(formattedReasoning);
+            if (['event', 'sentiment', 'market', 'quant'].includes(this.ticker.toLowerCase())) {
+                // Use the function name that's actually defined in main.js
+                if (typeof formatAnalystData === 'function') {
+                    formattedReasoning = formatAnalystData(formattedReasoning);
+                } else if (typeof formatEventAnalystData === 'function') {
+                    formattedReasoning = formatEventAnalystData(formattedReasoning);
+                }
             }
 
             this.reasoningText = `<strong>=== ${this.name} Analysis Results ===</strong>\n` +

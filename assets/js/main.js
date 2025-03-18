@@ -1288,39 +1288,83 @@ function formatAsTable(data) {
             return data; // Return original if not an array
         }
 
-        // Find the maximum length of timestamp and summary for alignment
+        // Set a maximum width for the summary column to prevent table from extending too far
+        // Use different widths for mobile and desktop
+        const MAX_SUMMARY_WIDTH = isMobileView ? 25 : 50;
+
+        // Find the maximum length of timestamp
         let maxTimestampLength = 'TIMESTAMP'.length;
-        let maxSummaryLength = 'SUMMARY'.length;
 
         jsonData.forEach(item => {
             if (item.timestamp && item.timestamp.length > maxTimestampLength) {
                 maxTimestampLength = item.timestamp.length;
             }
-            if (item.summary && item.summary.length > maxSummaryLength) {
-                maxSummaryLength = item.summary.length;
-            }
         });
 
         // Create header row with padding
-        let table = '┌' + '─'.repeat(maxTimestampLength + 2) + '┬' + '─'.repeat(maxSummaryLength + 2) + '┐\n';
-        table += '│ ' + 'TIMESTAMP'.padEnd(maxTimestampLength) + ' │ ' + 'SUMMARY'.padEnd(maxSummaryLength) + ' │\n';
-        table += '├' + '─'.repeat(maxTimestampLength + 2) + '┼' + '─'.repeat(maxSummaryLength + 2) + '┤\n';
+        let table = '┌' + '─'.repeat(maxTimestampLength + 2) + '┬' + '─'.repeat(MAX_SUMMARY_WIDTH + 2) + '┐\n';
+        table += '│ ' + 'TIMESTAMP'.padEnd(maxTimestampLength) + ' │ ' + 'SUMMARY'.padEnd(MAX_SUMMARY_WIDTH) + ' │\n';
+        table += '├' + '─'.repeat(maxTimestampLength + 2) + '┼' + '─'.repeat(MAX_SUMMARY_WIDTH + 2) + '┤\n';
 
-        // Add data rows
+        // Add data rows with text wrapping for summary
         jsonData.forEach(item => {
             if (item.timestamp && item.summary) {
-                table += '│ ' + item.timestamp.padEnd(maxTimestampLength) + ' │ ' + item.summary.padEnd(maxSummaryLength) + ' │\n';
+                const timestamp = item.timestamp;
+                const summary = item.summary;
+
+                // Wrap the summary text if it's longer than MAX_SUMMARY_WIDTH
+                const wrappedSummary = wrapText(summary, MAX_SUMMARY_WIDTH);
+                const lines = wrappedSummary.split('\n');
+
+                // First line includes both timestamp and summary
+                table += '│ ' + timestamp.padEnd(maxTimestampLength) + ' │ ' + lines[0].padEnd(MAX_SUMMARY_WIDTH) + ' │\n';
+
+                // Remaining lines (if any) only include summary, with timestamp area blank
+                for (let i = 1; i < lines.length; i++) {
+                    table += '│ ' + ' '.repeat(maxTimestampLength) + ' │ ' + lines[i].padEnd(MAX_SUMMARY_WIDTH) + ' │\n';
+                }
             }
         });
 
         // Add bottom border
-        table += '└' + '─'.repeat(maxTimestampLength + 2) + '┴' + '─'.repeat(maxSummaryLength + 2) + '┘\n';
+        table += '└' + '─'.repeat(maxTimestampLength + 2) + '┴' + '─'.repeat(MAX_SUMMARY_WIDTH + 2) + '┘\n';
 
         return table;
     } catch (error) {
         console.error("Error formatting data as table:", error);
         return data; // Return original on error
     }
+}
+
+// Helper function to wrap text to a specified width
+function wrapText(text, maxWidth) {
+    if (!text || text.length <= maxWidth) {
+        return text;
+    }
+
+    const words = text.split(' ');
+    let wrappedText = '';
+    let line = '';
+
+    for (const word of words) {
+        const testLine = line ? line + ' ' + word : word;
+
+        if (testLine.length <= maxWidth) {
+            line = testLine;
+        } else {
+            // If the current line plus the next word would exceed maxWidth,
+            // add the current line to the result and start a new line
+            wrappedText += (wrappedText ? '\n' : '') + line;
+            line = word;
+        }
+    }
+
+    // Add the last line
+    if (line) {
+        wrappedText += (wrappedText ? '\n' : '') + line;
+    }
+
+    return wrappedText;
 }
 
 // Modified version that handles the specific format of Event Analyst data
