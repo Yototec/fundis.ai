@@ -1585,6 +1585,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apiStatusDot) {
         // Use touchstart for more reliable mobile interaction
         apiStatusDot.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default to avoid double firing
             if (apiConnected) {
                 disconnectFromApi();
             } else {
