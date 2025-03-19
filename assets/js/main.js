@@ -1032,6 +1032,11 @@ function drawOffice() {
                     let isBottomLeftCorner = isBottomEdge && isLeftEdge;
                     let isBottomRightCorner = isBottomEdge && isRightEdge;
 
+                    // Fill the entire cell with a specific background color based on theme
+                    // Use specific colors for the bar table background instead of the general floor color
+                    ctx.fillStyle = isDarkMode ? '#E4E4E4' : '#f5f5f5';
+                    ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
+
                     // Always draw the table top surface
                     // Dark wood top with consistent coloring - darker in dark mode
                     ctx.fillStyle = isDarkMode ? '#2a1506' : '#3A2313';
@@ -1056,7 +1061,7 @@ function drawOffice() {
                     }
 
                     // Draw table frame/supports to fill the gap between tabletop and legs
-                    ctx.fillStyle = '#2A1A0A'; // Darker wood for the frame
+                    ctx.fillStyle = isDarkMode ? '#1a0d05' : '#2A1A0A'; // Darker wood for the frame in dark mode
 
                     // Left support
                     if (isLeftEdge) {
@@ -1089,7 +1094,7 @@ function drawOffice() {
                     }
 
                     // Draw the metal legs only at corners
-                    ctx.fillStyle = '#B8B8B8';
+                    ctx.fillStyle = isDarkMode ? '#8a8a8a' : '#B8B8B8';
                     if (isTopLeftCorner && isBottomEdge) {
                         // Top-left leg
                         ctx.fillRect(cellX + GRID_SIZE / 4 - 1, cellY + GRID_SIZE / 2 + GRID_SIZE / 8, 2, GRID_SIZE / 2 - GRID_SIZE / 8);
@@ -1112,7 +1117,7 @@ function drawOffice() {
 
                     // Draw foot rest bar only on bottom edge
                     if (isBottomEdge) {
-                        ctx.strokeStyle = '#B8B8B8';
+                        ctx.strokeStyle = isDarkMode ? '#8a8a8a' : '#B8B8B8';
                         ctx.lineWidth = 2;
                         ctx.beginPath();
 
@@ -1126,7 +1131,7 @@ function drawOffice() {
                     }
 
                     // Add border/outline but only on edges
-                    ctx.strokeStyle = '#222';
+                    ctx.strokeStyle = isDarkMode ? '#111' : '#222';
                     ctx.lineWidth = 1;
 
                     // Top edge
@@ -3077,7 +3082,7 @@ function updateThemeIcon(isDarkTheme) {
         COLORS.cloud = '#333333'; // Darker clouds for night time
         // Also update office colors for dark mode
         COLORS.carpet = '#E6E6E6'; // Darker carpet
-        COLORS.floor = '#E9E9E9';  // Darker floor
+        COLORS.floor = '#444444';  // Much darker floor for dark mode
         COLORS.wall = '#B2B2B2';   // Darker walls
         
         // Sun icon for switching to light mode
@@ -3110,7 +3115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         COLORS.sky = '#0a1a2a';     // Dark blue for night sky
         COLORS.cloud = '#333333';   // Darker clouds for night time
         COLORS.carpet = '#E6E6E6';  // Darker carpet
-        COLORS.floor = '#E9E9E9';   // Darker floor
+        COLORS.floor = '#444444';   // Much darker floor for dark mode
         COLORS.wall = '#B2B2B2';    // Darker walls
     }
 });
