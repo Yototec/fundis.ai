@@ -1430,6 +1430,7 @@ function setupMobileScrolling() {
             canvasOffset.x = Math.min(rightPadding, Math.max(-maxScroll + leftPadding, canvasOffset.x));
             startDragX = currentX;
             requestAnimationFrame(draw);
+            e.preventDefault();
         }
     }, { passive: false });
 
