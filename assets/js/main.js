@@ -2817,6 +2817,17 @@ function fetchAndUpdateBlockHeight() {
                 chainLength = data.chain_length;
                 const chainInfoElement = document.getElementById('chain-info');
                 chainInfoElement.innerHTML = `Block Height: <a href="https://sentichain.com/app?tab=BlockExplorer&block=last#" target="_blank" style="color: #00FFC8;">${chainLength}<span>↗</span></a> (Powered by SentiChain)`;
+                
+                // Auto-fill the endBlock input with the largest multiple of 50 that is <= chainLength
+                const endBlockInput = document.getElementById('endBlock');
+                if (endBlockInput && !apiConnected) {
+                    // Calculate the largest multiple of 50 that is <= chainLength
+                    const endBlockValue = Math.floor(chainLength / 50) * 50;
+                    // Only update the field if it's currently empty or has the default value
+                    if (!endBlockInput.value || endBlockInput.value === "200") {
+                        endBlockInput.value = endBlockValue;
+                    }
+                }
             }
         })
         .catch(err => {
