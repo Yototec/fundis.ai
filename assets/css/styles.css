@@ -130,11 +130,13 @@ body {
     }
 
     #fetch-status {
-        width: 100%;
-        margin-bottom: 10px;
-        position: absolute;
-        left: 10px;
-        bottom: 15vh;
+        display: block;
+        background-color: #333;
+        color: #0f0;
+        padding: 8px 12px;
+        border-radius: 5px;
+        margin: 0 auto 10px auto;
+        /* etc. */
     }
 
     #main-container {
@@ -640,7 +642,6 @@ body.dark-theme #terminalBox {
     background-color: #4b4b4b;
 }
 
-/* Inside your styles.css */
 .analyst-table {
     width: 100%;
     border-collapse: collapse;

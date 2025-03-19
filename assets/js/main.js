@@ -662,16 +662,13 @@ function wrapText(text, maxWidth) {
     return wrappedText;
 }
 
-// Modified version that handles the specific format of Event Analyst data
 function formatAnalystData(data) {
     try {
-        // Check if this looks like multiple "Block X-Y" sections
         const blockHeaderPattern = /Block \d+-\d+:/;
         if (typeof data === 'string' && blockHeaderPattern.test(data)) {
             const blocks = data.split(/Block \d+-\d+:/g).filter(block => block.trim());
             let formattedData = "";
 
-            // Extract the matching block headers
             const blockRegex = /Block \d+-\d+:/g;
             const headers = data.match(blockRegex) || [];
 
@@ -680,24 +677,20 @@ function formatAnalystData(data) {
                     formattedData += `<div><strong>${headers[idx]}</strong></div>\n`;
                 }
 
-                // Try to find JSON array within each block
                 const jsonMatch = block.match(/\[\s*\{[\s\S]*?\}\s*\]/);
                 if (jsonMatch) {
-                    // Replace ASCII with the new HTML table
                     const tableHtml = formatAsHtmlTable(jsonMatch[0]); 
                     formattedData += tableHtml;
                 } else {
-                    // No JSON found, just keep the raw text (escaped) in a <pre>
                     formattedData += `<pre>${escapeHtml(block)}</pre>`;
                 }
             });
             return formattedData;
         }
-        // If it doesn't match the "Block" pattern, handle as normal
         return data;
     } catch (error) {
         console.error("Error formatting data:", error);
-        return data; // fallback
+        return data;
     }
 }
 
