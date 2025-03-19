@@ -1388,7 +1388,7 @@ function formatAsTable(data) {
         table += '├' + '─'.repeat(maxTimestampLength + 2) + '┼' + '─'.repeat(MAX_SUMMARY_WIDTH + 2) + '┤\n';
 
         // Add data rows with text wrapping for summary
-        jsonData.forEach(item => {
+        jsonData.forEach((item, index) => {
             if (item.timestamp && item.summary) {
                 const timestamp = item.timestamp;
                 const summary = item.summary;
@@ -1403,6 +1403,11 @@ function formatAsTable(data) {
                 // Remaining lines (if any) only include summary, with timestamp area blank
                 for (let i = 1; i < lines.length; i++) {
                     table += '│ ' + ' '.repeat(maxTimestampLength) + ' │ ' + lines[i].padEnd(MAX_SUMMARY_WIDTH) + ' │\n';
+                }
+                
+                // Add a separator line between rows (except after the last row)
+                if (index < jsonData.length - 1) {
+                    table += '├' + '─'.repeat(maxTimestampLength + 2) + '┼' + '─'.repeat(MAX_SUMMARY_WIDTH + 2) + '┤\n';
                 }
             }
         });
