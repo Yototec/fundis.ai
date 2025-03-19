@@ -1371,7 +1371,7 @@ function formatAsTable(data) {
 
         // Set a maximum width for the summary column to prevent table from extending too far
         // Use different widths for mobile and desktop
-        const MAX_SUMMARY_WIDTH = isMobileView ? 25 : 50;
+        const MAX_SUMMARY_WIDTH = isMobileView ? 23 : 50;
 
         // Find the maximum length of timestamp
         let maxTimestampLength = 'TIMESTAMP'.length;
