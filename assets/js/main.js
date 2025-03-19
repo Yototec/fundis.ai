@@ -83,6 +83,10 @@ let activeTimers = [];
 let abortControllers = [];
 let analysisInProgress = false;
 
+// Global variable to track analysts at the bar table
+let analystsAtBarTable = [];
+let combinedAnalysisStarted = false;
+
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
     const gridHeightPx = ROWS * GRID_SIZE;
@@ -760,6 +764,10 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             // Reset the analyst state
             analyst.isFetching = false;
             analyst.state = 'idle';
+            
+            // After analysis is complete, make the analyst move to the bar table
+            // This is the key change - each analyst independently moves to the table after finishing
+            moveAnalystToBarTable(analyst, symbol, apiKey, startBlock, endBlock - 1);
 
             // If there's a callback, execute it
             if (onCompleteCallback && apiConnected) {
@@ -919,6 +927,10 @@ async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
 
 function disconnectFromApi() {
     if (apiConnected) {
+        // Reset table tracking variables
+        analystsAtBarTable = [];
+        combinedAnalysisStarted = false;
+        
         // Mark disconnection in progress
         apiConnected = false;
         updateConnectionStatus(false);
@@ -1839,14 +1851,18 @@ if (Person.prototype.goToDesk) {
 // Add this new function after fetchDataFromApi function
 // Function to perform combined analysis after all individual analyses
 function performCombinedAnalysis(symbol, apiKey, endBlock) {
-    // Skip if we're disconnected
-    if (!apiConnected) {
-        debugLog("Combined analysis cancelled - disconnected");
+    // Skip if we're disconnected or if analysis has already started
+    if (!apiConnected || combinedAnalysisStarted) {
+        debugLog("Combined analysis cancelled - " + 
+                 (combinedAnalysisStarted ? "already in progress" : "disconnected"));
         return;
     }
-
-    debugLog("Starting combined analysis");
-    updateSyncStatus("All analysts are gathering for a collaborative analysis...");
+    
+    // Mark that we're starting the combined analysis to prevent duplicate starts
+    combinedAnalysisStarted = true;
+    
+    debugLog("Starting collaborative debate and combined analysis");
+    updateSyncStatus("Analysts are starting their collaborative analysis...");
 
     // Set a flag to indicate analysis is in progress
     analysisInProgress = true;
@@ -1859,396 +1875,172 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
     const tableCenterX = Math.floor(COLS / 2);
     const tableCenterY = Math.floor(ROWS / 2);
     
-    // Get optimized positions around the bar table
-    const tablePositions = findBarTablePositions(tableCenterX, tableCenterY);
-    
-    // Log the positions for debugging
-    debugLog(`Bar table positions: ${JSON.stringify(tablePositions)}`);
+    // Make sure all analysts are facing the table center
+    for (const person of people) {
+        if (!person.facingTableCenter) {
+            // Update facing direction to look toward the center of the table
+            const dx = tableCenterX - person.x;
+            const dy = tableCenterY - person.y;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                person.facingDirection = dx > 0 ? 'right' : 'left';
+            } else {
+                person.facingDirection = dy > 0 ? 'down' : 'up';
+            }
+            person.facingTableCenter = true;
+            debugLog(`${person.name} now facing the center of the table`);
+        }
+    }
 
-    // Update terminal to show analysts are gathering
+    // Update terminal to show debate is starting
     const terminalContent = document.getElementById('terminalContent');
     if (terminalContent) {
         terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
-<div class="terminal-instructions">Analysts are gathering for the ${symbol} collaborative analysis...</div>
-<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Team is convening to share insights...</div>`;
+<div class="terminal-instructions">Analysts are debating ${symbol} findings...</div>
+<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Team is combining their individual analyses...</div>`;
 
         if (window.combinedAnalysisResults) {
             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
         }
     }
-
-    // Have all analysts move to positions around the table
-    const analystsMoved = [];
-    let allAnalystsArrived = false;
     
-    // First make sure all analysts are free to move
-    for (const person of people) {
-        person.isFetching = false;
-        person.facingTableCenter = false;
-    }
-    
-    for (let i = 0; i < people.length; i++) {
-        const person = people[i];
-        person.state = 'walking';
-        
-        // Set destination to the corresponding position around the table
-        const targetPos = tablePositions[i];
-        debugLog(`Setting ${person.name} destination to (${targetPos.x}, ${targetPos.y})`);
-        
-        const success = person.setDestination(targetPos.x, targetPos.y);
-        
-        if (!success) {
-            debugLog(`${person.name} failed to find path to (${targetPos.x}, ${targetPos.y})`);
-            
-            // Try with a wider search radius
-            debugLog("Attempting with wider search radius...");
-            const path = findPathExtended(person.x, person.y, targetPos.x, targetPos.y);
-            if (path.length > 0) {
-                person.path = path;
-                person.pathIndex = 0;
-                debugLog(`Found extended path for ${person.name}, length: ${path.length}`);
-            } else {
-                // Fall back to teleporting if we really can't find a path
-                debugLog(`${person.name} can't find path, directly setting position`);
-                
-                // Use a nearby walkable position
-                const nearestPos = findNearestWalkablePosition(targetPos.x, targetPos.y, 5);
-                person.x = nearestPos.x;
-                person.y = nearestPos.y;
-                person.state = 'idle';
-                debugLog(`Teleported ${person.name} to (${nearestPos.x}, ${nearestPos.y})`);
-            }
-        }
-        
-        person.speak("📊 💬 🤔");
-        
-        // Track movement status
-        analystsMoved.push(false);
-    }
-
-    // Check if all analysts have arrived at the table
-    const checkArrivalInterval = setInterval(() => {
-        let allArrived = true;
-        
-        for (let i = 0; i < people.length; i++) {
-            const person = people[i];
-            const targetPos = tablePositions[i];
-            
-            // Check if this person has arrived at their target position
-            if (person.x === targetPos.x && person.y === targetPos.y) {
-                analystsMoved[i] = true;
-                if (!person.facingTableCenter) {
-                    // Update facing direction to look toward the center of the table
-                    const dx = tableCenterX - person.x;
-                    const dy = tableCenterY - person.y;
-                    
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        person.facingDirection = dx > 0 ? 'right' : 'left';
-                    } else {
-                        person.facingDirection = dy > 0 ? 'down' : 'up';
-                    }
-                    person.facingTableCenter = true;
-                    debugLog(`${person.name} now facing the center of the table`);
-                }
-            } else {
-                allArrived = false;
-                debugLog(`${person.name} still moving: at (${person.x}, ${person.y}), target (${targetPos.x}, ${targetPos.y})`);
-                
-                // Check if movement is stalled (path depleted but not at destination)
-                if (person.path.length === 0 && person.state !== 'walking') {
-                    debugLog(`${person.name} is stalled, teleporting to destination`);
-                    person.x = targetPos.x;
-                    person.y = targetPos.y;
-                    analystsMoved[i] = true;
-                }
-            }
-        }
-        
-        // If all analysts have arrived, start the debate and API calls
-        if (allArrived && !allAnalystsArrived) {
-            allAnalystsArrived = true;
-            clearInterval(checkArrivalInterval);
-            debugLog("All analysts have arrived at their positions");
-            startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue);
-        }
-    }, 300); // Check every 300ms
+    // Start the collaborative debate - the analysis process is the same as before
+    startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue);
 }
 
-// Helper function to find the nearest walkable position
-function findNearestWalkablePosition(x, y, maxRadius) {
-    // First check if the position itself is walkable
-    if (isWalkable(x, y)) {
-        return { x, y };
-    }
-    
-    // Check positions in expanding circles around the target
-    for (let r = 1; r <= maxRadius; r++) {
-        for (let dx = -r; dx <= r; dx++) {
-            for (let dy = -r; dy <= r; dy++) {
-                // Only check positions at approximate distance r
-                if (Math.abs(dx) === r || Math.abs(dy) === r) {
-                    const testX = x + dx;
-                    const testY = y + dy;
-                    
-                    // Ensure we're in bounds
-                    if (testX >= 0 && testX < COLS && testY >= 0 && testY < ROWS) {
-                        if (isWalkable(testX, testY)) {
-                            return { x: testX, y: testY };
-                        }
-                    }
-                }
+// Add this to reset the analyst tracking when disconnecting
+function disconnectFromApi() {
+    if (apiConnected) {
+        // Reset table tracking variables
+        analystsAtBarTable = [];
+        combinedAnalysisStarted = false;
+        
+        // Mark disconnection in progress
+        apiConnected = false;
+        updateConnectionStatus(false);
+        stopTaskScheduler();
+
+        // Stop ongoing analysis
+        analysisInProgress = false;
+
+        // Cancel all active timers
+        while (activeTimers.length > 0) {
+            const timer = activeTimers.pop();
+            clearTimeout(timer);
+        }
+
+        // Clear animation timer
+        if (animationTimer) {
+            clearInterval(animationTimer);
+            animationTimer = null;
+        }
+
+        // Abort any ongoing fetch requests
+        while (abortControllers.length > 0) {
+            const controller = abortControllers.pop();
+            try {
+                controller.abort();
+            } catch (e) {
+                console.error("Error aborting fetch:", e);
             }
         }
+
+        // Reset all state variables
+        currentFetchingTicker = null;
+        fetchQueue = [];
+        isTaskInProgress = false;
+        combinedAnalysisResults = null;
+        analysisCompleted = false;
+
+        // Reset all people
+        for (const p of people) {
+            p.isFetching = false;
+            p.state = 'idle';
+
+            // Restore original speak functionality if it was overridden
+            if (p.originalSpeak) {
+                p.speak = p.originalSpeak;
+                p.originalSpeak = null;
+            }
+        }
+
+        // Reset the terminal display to initial form state
+        updateTerminalDisplay();
+
+        // Clear any status messages
+        updateSyncStatus("");
+
+        // Restart animation with clean state
+        start();
+
+        debugLog("API Disconnected - All processes terminated");
     }
-    
-    // If we get here, we couldn't find a walkable position
-    // Return a default safe position
-    return { x: Math.floor(COLS / 2), y: ROWS - 3 };
 }
 
-// Add this new function to handle the collaborative debate and API calls
-function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
-    debugLog("All analysts have arrived at the table - starting collaborative debate");
-    updateSyncStatus("Analysts are debating insights and findings...");
+// Function to move a single analyst to the bar table after completing their analysis
+function moveAnalystToBarTable(analyst, symbol, apiKey, startBlock, endBlockValue) {
+    // Skip if disconnected or if analysis has already started
+    if (!apiConnected || combinedAnalysisStarted) {
+        debugLog(`${analyst.name} move to bar table skipped - ${combinedAnalysisStarted ? 'combined analysis already started' : 'disconnected'}`);
+        return;
+    }
     
-    // Start the debate animation - analysts exchanging symbols
-    let debateCounter = 0;
-    const debateInterval = setInterval(() => {
-        // Skip if disconnected
-        if (!apiConnected || !analysisInProgress) {
-            clearInterval(debateInterval);
-            return;
+    // Get positions around the bar table
+    const tableCenterX = Math.floor(COLS / 2);
+    const tableCenterY = Math.floor(ROWS / 2);
+    
+    // Add a message about moving to collaborate
+    analyst.speak("Let's discuss at the table!");
+    
+    // Find the analyst's position at the table
+    // We use the index in the people array to ensure each analyst goes to their assigned position
+    const analystIndex = people.findIndex(p => p.ticker === analyst.ticker);
+    
+    // Get optimized positions around the bar table
+    const tablePositions = findBarTablePositions(tableCenterX, tableCenterY);
+    
+    // Target position for this analyst
+    const targetPos = tablePositions[analystIndex];
+    debugLog(`${analyst.name} moving to bar table position (${targetPos.x}, ${targetPos.y})`);
+    
+    // Try setting destination with normal path finding
+    const success = analyst.setDestination(targetPos.x, targetPos.y);
+    
+    if (!success) {
+        debugLog(`${analyst.name} failed to find path to bar table position (${targetPos.x}, ${targetPos.y})`);
+        
+        // Try with extended path finding
+        const path = findPathExtended(analyst.x, analyst.y, targetPos.x, targetPos.y);
+        if (path.length > 0) {
+            analyst.path = path;
+            analyst.pathIndex = 0;
+            analyst.state = 'walking';
+            debugLog(`Found extended path for ${analyst.name} to bar table, length: ${path.length}`);
+        } else {
+            // Teleport if necessary
+            debugLog(`${analyst.name} can't find path to bar table, teleporting`);
+            const nearestPos = findNearestWalkablePosition(targetPos.x, targetPos.y, 5);
+            analyst.x = nearestPos.x;
+            analyst.y = nearestPos.y;
         }
-        
-        debateCounter++;
-        
-        // Rotate who's speaking
-        const speakerIndex = debateCounter % people.length;
-        const speaker = people[speakerIndex];
-        
-        // Create debate symbols
-        const debateSymbols = [
-            "📊 📈 ⁉️",
-            "🔍 💹 👆",
-            "⚠️ 🔄 ✅",
-            "👀 💰 👉",
-            "❓ 📉 ❗",
-            "🤔 💼 📱",
-            "📑 🧠 💭"
-        ];
-        
-        // Have the current speaker say something
-        speaker.speak(debateSymbols[Math.floor(Math.random() * debateSymbols.length)]);
-        
-        // Update terminal to show debate is happening
-        const terminalContent = document.getElementById('terminalContent');
-        if (terminalContent) {
-            terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
-<div class="terminal-instructions">Analysts are debating ${symbol} insights...</div>
-<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Team is analyzing data collectively...</div>
-<div style="color: #888; font-style: italic">Retrieving comprehensive market observations and strategic considerations...</div>`;
-
-            if (window.combinedAnalysisResults) {
-                terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+    }
+    
+    // Add this analyst to the tracking array if not already there
+    if (!analystsAtBarTable.includes(analyst.ticker)) {
+        analystsAtBarTable.push(analyst.ticker);
+        debugLog(`${analyst.name} added to bar table tracking. Current count: ${analystsAtBarTable.length}`);
+    }
+    
+    // Check if this was the last analyst to arrive
+    if (analystsAtBarTable.length === 4 && !combinedAnalysisStarted) {
+        debugLog("All 4 analysts have arrived at the bar table, starting collaborative analysis");
+        // Small delay to let the last analyst settle at their position
+        setTimeout(() => {
+            if (apiConnected) {
+                performCombinedAnalysis(symbol, apiKey, endBlock);
             }
-        }
-    }, 2000); // Rotate speaker every 2 seconds
-
-    // Wait a moment before starting the API calls
-    setTimeout(() => {
-        // Skip if we've disconnected
-        if (!apiConnected || !analysisInProgress) {
-            clearInterval(debateInterval);
-            return;
-        }
-        
-        // Make the API calls in parallel with the new block range
-        const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
-        const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
-
-        // Show progress in terminal
-        updateSyncStatus(`Fetching comprehensive observation data for blocks ${startBlock}-${endBlockValue}...`);
-
-        // First fetch the observation data
-        fetchDataFromApi(observationUrl, symbol, startBlock, endBlockValue)
-            .then(observationResult => {
-                // Check if we've disconnected
-                if (!apiConnected || !analysisInProgress) {
-                    clearInterval(debateInterval);
-                    debugLog("Combined analysis observation fetch completed but disconnected - aborting");
-                    return { observation: null, consideration: null };
-                }
-
-                updateSyncStatus(`Fetching strategic consideration data for blocks ${startBlock}-${endBlockValue}...`);
-
-                // Then fetch the consideration data
-                return fetchDataFromApi(considerationUrl, symbol, startBlock, endBlockValue)
-                    .then(considerationResult => {
-                        // Check again for disconnection
-                        if (!apiConnected || !analysisInProgress) {
-                            clearInterval(debateInterval);
-                            debugLog("Combined analysis consideration fetch completed but disconnected - aborting");
-                            return { observation: null, consideration: null };
-                        }
-
-                        return { observation: observationResult, consideration: considerationResult };
-                    });
-            })
-            .then(results => {
-                // Stop the debate animation
-                clearInterval(debateInterval);
-
-                // Check if we've disconnected
-                if (!apiConnected || !analysisInProgress) {
-                    debugLog("Combined analysis processing cancelled - disconnected");
-                    return;
-                }
-
-                // Skip further processing if results are null (user disconnected)
-                if (!results.observation && !results.consideration) {
-                    return;
-                }
-
-                // Everyone celebrates completion
-                for (const person of people) {
-                    person.speak("All right! Let's combine our ideas.");
-                }
-
-                // Format and display the combined results
-                debugLog("Combined analysis complete");
-                updateSyncStatus("Combined analysis completed successfully!");
-
-                // Format the results nicely
-                let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS (Blocks ${startBlock}-${endBlockValue}) ===</strong>\n\n`;
-
-                if (results.observation) {
-                    try {
-                        // Always try to format the observation data
-                        const formattedObservation = formatAnalystData(results.observation);
-                        formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedObservation}\n\n`;
-                    } catch (error) {
-                        console.error("Error formatting observation data:", error);
-                        formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.observation}\n\n`;
-                    }
-                } else {
-                    formattedResults += `<strong>Market Observations:</strong> No data available\n\n`;
-                }
-
-                if (results.consideration) {
-                    try {
-                        // Always try to format the consideration data
-                        const formattedConsideration = formatAnalystData(results.consideration);
-                        formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedConsideration}`;
-                    } catch (error) {
-                        console.error("Error formatting consideration data:", error);
-                        formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.consideration}`;
-                    }
-                } else {
-                    formattedResults += `<strong>Strategic Considerations:</strong> No data available`;
-                }
-
-                // Store the formatted results in the global variable
-                combinedAnalysisResults = `<strong>=== FINAL COLLABORATIVE ANALYSIS ===</strong>\n\n`;
-                combinedAnalysisResults += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] Analysis integration complete!</span>\n\n`;
-                combinedAnalysisResults += formattedResults;
-
-                // Set the flag to indicate analysis is complete
-                analysisCompleted = true;
-                analysisInProgress = false;
-
-                // Add to the terminal
-                const terminalContent = document.getElementById('terminalContent');
-                if (terminalContent) {
-                    terminalContent.innerHTML = combinedAnalysisResults;
-                }
-
-                // Add to terminal history
-                addToTerminalHistory(`All analysts completed comprehensive ${symbol} analysis for blocks ${startBlock}-${endBlockValue}`);
-
-                // After a delay, have analysts wander randomly
-                setTimeout(() => {
-                    // Have all analysts wander randomly
-                    for (const person of people) {
-                        person.isFetching = false;
-                        person.facingTableCenter = false;
-                        person.state = 'idle';
-                        person.wander();
-                        if (Math.random() > 0.5) {
-                            person.speak("📊 💹 🚀");
-                        } else {
-                            person.speak("📈 💯 ⭐");
-                        }
-                    }
-
-                    // Reset task status
-                    isTaskInProgress = false;
-                    
-                    // Set up a continuous wandering behavior for all analysts
-                    const wanderTimer = setInterval(() => {
-                        // Skip if disconnected
-                        if (!apiConnected) {
-                            clearInterval(wanderTimer);
-                            return;
-                        }
-                        
-                        // Randomly select an analyst to move
-                        const randomAnalyst = people[Math.floor(Math.random() * people.length)];
-                        
-                        // Only have them wander if they're not already doing something
-                        if (randomAnalyst.state === 'idle' && !randomAnalyst.isFetching) {
-                            randomAnalyst.wander();
-                            
-                            // Small chance to speak while wandering
-                            if (Math.random() < 0.3) {
-                                const wanderEmojis = [
-                                    "🔍 📊 💡",
-                                    "📱 📈 👀",
-                                    "💻 🌐 📊",
-                                    "🧠 💹 ⚡",
-                                    "📉 📈 ⭐"
-                                ];
-                                randomAnalyst.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
-                            }
-                        }
-                    }, 5000); // Try to move a random analyst every 5 seconds
-                    
-                    // Add to tracked timers
-                    activeTimers.push(wanderTimer);
-                    
-                    // Schedule interesting place visits
-                    scheduleInterestingPlaceVisits();
-                    
-                    scheduleNextTask();
-                }, 3000); // Wait 3 seconds before wandering
-            })
-            .catch(error => {
-                // Stop the debate animation
-                clearInterval(debateInterval);
-
-                // Check if we've disconnected or the error is related to disconnection
-                if (!apiConnected || !analysisInProgress || error.name === 'AbortError') {
-                    debugLog("Combined analysis error handling cancelled - disconnected");
-                    return;
-                }
-
-                console.error("Error during combined analysis:", error);
-                updateSyncStatus("Error during combined analysis: " + error.message);
-
-                // Handle error - reset analyst states
-                for (const person of people) {
-                    person.isFetching = false;
-                    person.facingTableCenter = false;
-                    person.state = 'idle';
-                    person.speak("❌ 📊 ❓");
-                    person.wander();
-                }
-
-                // Reset task status
-                isTaskInProgress = false;
-                analysisInProgress = false;
-                scheduleNextTask();
-            });
-    }, 3000); // Wait 3 seconds before starting API calls
+        }, 1000);
+    }
 }
 
 // Add this function after the drawWindowClouds function
@@ -2560,4 +2352,289 @@ function scheduleInterestingPlaceVisits() {
     
     // Add to tracked timers
     activeTimers.push(placeVisitTimer);
+}
+
+// Add this new function to handle the collaborative debate and API calls
+function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
+    debugLog("Starting collaborative debate");
+    updateSyncStatus("Analysts are debating insights and findings...");
+    
+    // Start the debate animation - analysts exchanging symbols
+    let debateCounter = 0;
+    const debateInterval = setInterval(() => {
+        // Skip if disconnected
+        if (!apiConnected || !analysisInProgress) {
+            clearInterval(debateInterval);
+            return;
+        }
+        
+        debateCounter++;
+        
+        // Rotate who's speaking
+        const speakerIndex = debateCounter % people.length;
+        const speaker = people[speakerIndex];
+        
+        // Create debate symbols
+        const debateSymbols = [
+            "📊 📈 ⁉️",
+            "🔍 💹 👆",
+            "⚠️ 🔄 ✅",
+            "👀 💰 👉",
+            "❓ 📉 ❗",
+            "🤔 💼 📱",
+            "📑 🧠 💭"
+        ];
+        
+        // Have the current speaker say something
+        speaker.speak(debateSymbols[Math.floor(Math.random() * debateSymbols.length)]);
+        
+        // Update terminal to show debate is happening
+        const terminalContent = document.getElementById('terminalContent');
+        if (terminalContent) {
+            terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
+<div class="terminal-instructions">Analysts are debating ${symbol} insights...</div>
+<div style="color: #0f0">[${new Date().toLocaleTimeString()}] Team is analyzing data collectively...</div>
+<div style="color: #888; font-style: italic">Retrieving comprehensive market observations and strategic considerations...</div>`;
+
+            if (window.combinedAnalysisResults) {
+                terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
+            }
+        }
+    }, 2000); // Rotate speaker every 2 seconds
+
+    // Wait a moment before starting the API calls
+    setTimeout(() => {
+        // Skip if we've disconnected
+        if (!apiConnected || !analysisInProgress) {
+            clearInterval(debateInterval);
+            return;
+        }
+        
+        // Make the API calls in parallel with the new block range
+        const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
+        const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
+
+        // Show progress in terminal
+        updateSyncStatus(`Fetching comprehensive observation data for blocks ${startBlock}-${endBlockValue}...`);
+
+        // First fetch the observation data
+        fetchDataFromApi(observationUrl, symbol, startBlock, endBlockValue)
+            .then(observationResult => {
+                // Check if we've disconnected
+                if (!apiConnected || !analysisInProgress) {
+                    clearInterval(debateInterval);
+                    debugLog("Combined analysis observation fetch completed but disconnected - aborting");
+                    return { observation: null, consideration: null };
+                }
+
+                updateSyncStatus(`Fetching strategic consideration data for blocks ${startBlock}-${endBlockValue}...`);
+
+                // Then fetch the consideration data
+                return fetchDataFromApi(considerationUrl, symbol, startBlock, endBlockValue)
+                    .then(considerationResult => {
+                        // Check again for disconnection
+                        if (!apiConnected || !analysisInProgress) {
+                            clearInterval(debateInterval);
+                            debugLog("Combined analysis consideration fetch completed but disconnected - aborting");
+                            return { observation: null, consideration: null };
+                        }
+
+                        return { observation: observationResult, consideration: considerationResult };
+                    });
+            })
+            .then(results => {
+                // Stop the debate animation
+                clearInterval(debateInterval);
+
+                // Check if we've disconnected
+                if (!apiConnected || !analysisInProgress) {
+                    debugLog("Combined analysis processing cancelled - disconnected");
+                    return;
+                }
+
+                // Skip further processing if results are null (user disconnected)
+                if (!results.observation && !results.consideration) {
+                    return;
+                }
+
+                // Everyone celebrates completion
+                for (const person of people) {
+                    person.speak("Analysis complete! 🎉");
+                }
+
+                // Format and display the combined results
+                debugLog("Combined analysis complete");
+                updateSyncStatus("Combined analysis completed successfully!");
+
+                // Format the results nicely
+                let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS (Blocks ${startBlock}-${endBlockValue}) ===</strong>\n\n`;
+
+                if (results.observation) {
+                    try {
+                        // Always try to format the observation data
+                        const formattedObservation = formatAnalystData(results.observation);
+                        formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedObservation}\n\n`;
+                    } catch (error) {
+                        console.error("Error formatting observation data:", error);
+                        formattedResults += `<strong>Market Observations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.observation}\n\n`;
+                    }
+                } else {
+                    formattedResults += `<strong>Market Observations:</strong> No data available\n\n`;
+                }
+
+                if (results.consideration) {
+                    try {
+                        // Always try to format the consideration data
+                        const formattedConsideration = formatAnalystData(results.consideration);
+                        formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${formattedConsideration}`;
+                    } catch (error) {
+                        console.error("Error formatting consideration data:", error);
+                        formattedResults += `<strong>Strategic Considerations (Blocks ${startBlock}-${endBlockValue}):</strong>\n${results.consideration}`;
+                    }
+                } else {
+                    formattedResults += `<strong>Strategic Considerations:</strong> No data available`;
+                }
+
+                // Store the formatted results in the global variable
+                combinedAnalysisResults = `<strong>=== FINAL COLLABORATIVE ANALYSIS ===</strong>\n\n`;
+                combinedAnalysisResults += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] Analysis integration complete!</span>\n\n`;
+                combinedAnalysisResults += formattedResults;
+
+                // Set the flag to indicate analysis is complete
+                analysisCompleted = true;
+                analysisInProgress = false;
+                combinedAnalysisStarted = false; // Reset for next time
+
+                // Add to the terminal
+                const terminalContent = document.getElementById('terminalContent');
+                if (terminalContent) {
+                    terminalContent.innerHTML = combinedAnalysisResults;
+                }
+
+                // Add to terminal history
+                addToTerminalHistory(`All analysts completed comprehensive ${symbol} analysis for blocks ${startBlock}-${endBlockValue}`);
+
+                // After a delay, have analysts wander randomly
+                setTimeout(() => {
+                    // Have all analysts wander randomly
+                    for (const person of people) {
+                        person.isFetching = false;
+                        person.facingTableCenter = false;
+                        person.state = 'idle';
+                        person.wander();
+                        if (Math.random() > 0.5) {
+                            person.speak("📊 💹 🚀");
+                        } else {
+                            person.speak("📈 💯 ⭐");
+                        }
+                    }
+
+                    // Reset table tracking variables
+                    analystsAtBarTable = [];
+                    
+                    // Reset task status
+                    isTaskInProgress = false;
+                    
+                    // Set up a continuous wandering behavior for all analysts
+                    const wanderTimer = setInterval(() => {
+                        // Skip if disconnected
+                        if (!apiConnected) {
+                            clearInterval(wanderTimer);
+                            return;
+                        }
+                        
+                        // Randomly select an analyst to move
+                        const randomAnalyst = people[Math.floor(Math.random() * people.length)];
+                        
+                        // Only have them wander if they're not already doing something
+                        if (randomAnalyst.state === 'idle' && !randomAnalyst.isFetching) {
+                            randomAnalyst.wander();
+                            
+                            // Small chance to speak while wandering
+                            if (Math.random() < 0.3) {
+                                const wanderEmojis = [
+                                    "🔍 📊 💡",
+                                    "📱 📈 👀",
+                                    "💻 🌐 📊",
+                                    "🧠 💹 ⚡",
+                                    "📉 📈 ⭐"
+                                ];
+                                randomAnalyst.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
+                            }
+                        }
+                    }, 5000); // Try to move a random analyst every 5 seconds
+                    
+                    // Add to tracked timers
+                    activeTimers.push(wanderTimer);
+                    
+                    // Schedule interesting place visits
+                    scheduleInterestingPlaceVisits();
+                    
+                    scheduleNextTask();
+                }, 3000); // Wait 3 seconds before wandering
+            })
+            .catch(error => {
+                // Stop the debate animation
+                clearInterval(debateInterval);
+                
+                // Check if we've disconnected or the error is related to disconnection
+                if (!apiConnected || !analysisInProgress || error.name === 'AbortError') {
+                    debugLog("Combined analysis error handling cancelled - disconnected");
+                    return;
+                }
+
+                console.error("Error during combined analysis:", error);
+                updateSyncStatus("Error during combined analysis: " + error.message);
+
+                // Handle error - reset analyst states
+                for (const person of people) {
+                    person.isFetching = false;
+                    person.facingTableCenter = false;
+                    person.state = 'idle';
+                    person.speak("❌ 📊 ❓");
+                    person.wander();
+                }
+                
+                // Reset table tracking variables
+                analystsAtBarTable = [];
+                combinedAnalysisStarted = false;
+
+                // Reset task status
+                isTaskInProgress = false;
+                analysisInProgress = false;
+                scheduleNextTask();
+            });
+    }, 3000); // Wait 3 seconds before starting API calls
+}
+
+// Helper function to find the nearest walkable position
+function findNearestWalkablePosition(x, y, maxRadius) {
+    // First check if the position itself is walkable
+    if (isWalkable(x, y)) {
+        return { x, y };
+    }
+    
+    // Check positions in expanding circles around the target
+    for (let r = 1; r <= maxRadius; r++) {
+        for (let dx = -r; dx <= r; dx++) {
+            for (let dy = -r; dy <= r; dy++) {
+                // Only check positions at approximate distance r
+                if (Math.abs(dx) === r || Math.abs(dy) === r) {
+                    const testX = x + dx;
+                    const testY = y + dy;
+                    
+                    // Ensure we're in bounds
+                    if (testX >= 0 && testX < COLS && testY >= 0 && testY < ROWS) {
+                        if (isWalkable(testX, testY)) {
+                            return { x: testX, y: testY };
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // If we get here, we couldn't find a walkable position
+    // Return a default safe position
+    return { x: Math.floor(COLS / 2), y: ROWS - 3 };
 }
