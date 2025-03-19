@@ -1539,7 +1539,7 @@ people.forEach(person => {
                 "✨ 📊 💹",
                 "📈 🔍 ⚡",
                 "🚀 ⭐ 📊",
-                "💯 📉 🔄",
+                "💯 📉",
                 "⚙️ 🔢 #@!",
                 "💻 🔮 📝",
                 "🧮 %$#@!",
@@ -1743,15 +1743,13 @@ if (dog.speak) {
     dog.speak = function (message) {
         // Only use emoji messages for the dog
         const dogEmojis = [
-            "🐶 !!",
-            "🐕 ❤️ 🦮",
-            "🐾 🐾 🐾",
-            "🦴 🐶 !",
-            "🐕‍🦺 💫 ✨",
-            "🐩 💭 💤",
-            "🐕 #!?",
-            "✨ 🦮 !!",
-            "🐶 ??? 🐾"
+            "🐶",
+            "🦮",
+            "🐾",
+            "🦴",
+            "🐕‍🦺",
+            "🐩",
+            "🐕",
         ];
         const randomEmoji = dogEmojis[Math.floor(Math.random() * dogEmojis.length)];
         dog.originalSpeak.call(this, randomEmoji);
@@ -1776,7 +1774,7 @@ Person.prototype.petDog = function () {
         if (dog.getPetBy(this)) {
             this.state = 'pettingDog';
             this.stateTime = 0;
-            this.speak("🐶 ❤️ !");
+            this.speak("❤️");
             return true;
         }
     }
@@ -1792,14 +1790,9 @@ Person.prototype.update = function () {
         if (this.stateTime > 8) {
             this.state = 'idle';
             this.stateTime = 0;
-
-            // Say something nice about the dog using emojis
             const dogComments = [
-                "🐶 ❤️ !",
-                "🐕 👍 ✨",
-                "🐾 😊 ✨",
-                "🐶 🌟 !",
-                "🐕 🦴 🎉"
+                "❤️",
+                "✨",
             ];
             this.speak(dogComments[Math.floor(Math.random() * dogComments.length)]);
         }
@@ -1823,7 +1816,7 @@ Person.prototype.wander = function () {
     // 20% chance to try to find the dog instead of random wandering
     if (Math.random() < 0.2) {
         this.setDestination(dog.x, dog.y);
-        this.speak("🐶 👀 ?");
+        this.speak("🐶");
     } else {
         originalIdle.call(this);
     }
@@ -1836,17 +1829,17 @@ if (originalFindInteraction) {
         const possiblePartners = people.filter(p => p !== this && !p.isFetching);
         if (possiblePartners.length > 0) {
             const partner = possiblePartners[Math.floor(Math.random() * possiblePartners.length)];
-            this.speak(`👋 📊 ?`);
+            this.speak(`👋`);
 
             // Set a timer for them to respond
             setTimeout(() => {
                 if (!partner.isFetching) {
-                    partner.speak(`📈 👍 ✨`);
+                    partner.speak(`📈`);
                 }
             }, 1500);
         } else {
             // Just talk to the office in general
-            this.speak("📊 📈 ❓");
+            this.speak("📊");
         }
     };
 }
@@ -2168,8 +2161,6 @@ function handleFormSubmission() {
 
 // Add this to the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
-    // ... existing code ...
-
     // Add event listeners for tab switching on mobile
     const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach(button => {
@@ -2184,6 +2175,4 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
-
-    // Remove the mobile submit button code block that was here
 });

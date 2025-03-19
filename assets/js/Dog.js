@@ -248,21 +248,12 @@ class Dog {
 
         // Fix: Improved detection of barking animations
         const isBarking = this.messageTime > 0 && (
-            this.messageText.includes("🐶 ❗") ||
-            this.messageText.includes("🐕 ⁉️") ||
-            this.messageText.includes("🐾 💫 ✨") ||
-            this.messageText.includes("🐩 😊 ✨") ||
-            this.messageText.includes("🐶 🎯 ❗") ||
-            this.messageText.includes("🐕‍🦺 ⚡ ✨") ||
-            this.messageText.includes("🐾 🐾 ❗") ||
-            this.messageText.includes("🐶 💫 🌟") ||
-            this.messageText.includes("🐕 ❤️ ✨") ||
-            this.messageText.includes("👅 🐾 ❗") ||
-            this.messageText.includes("🐶 👋 ✨") ||
-            this.messageText.includes("🐕 😄 ⭐") ||
-            this.messageText.includes("🐩 ✨ 🌟") ||
-            this.messageText.includes("👂 🐕 ⚡") ||
-            this.messageText.includes("🐶 ⬆️ ❗")
+            this.messageText.includes("🐶") ||
+            this.messageText.includes("🐕") ||
+            this.messageText.includes("🐾") ||
+            this.messageText.includes("🐩") ||
+            this.messageText.includes("🐕‍🦺") ||
+            this.messageText.includes("👅")
         );
 
         if (isBarking) {
@@ -316,21 +307,8 @@ class Dog {
 
     woof() {
         const woofs = [
-            "🐶 ❗",
-            "🐕 ⁉️",
-            "🐾 💫 ✨",
-            "🐩 😊 ✨",
-            "🐶 🎯 ❗",
-            "🐕‍🦺 ⚡ ✨",
-            "🐾 🐾 ❗",
-            "🐶 💫 🌟",
-            "🐕 ❤️ ✨",
-            "👅 🐾 ❗",
-            "🐶 👋 ✨",
-            "🐕 😄 ⭐",
-            "🐩 ✨ 🌟",
-            "👂 🐕 ⚡",
-            "🐶 ⬆️ ❗"
+            "❗",
+            "⁉️",
         ];
         this.messageText = woofs[Math.floor(Math.random() * woofs.length)];
         this.messageTime = 60;
@@ -351,22 +329,10 @@ class Dog {
 
     cuteBark() {
         const cuteBarks = [
-            "🐶 🐶 ❗",
-            "🐾 💫 ❗",
-            "👃 🔍 ✨",
-            "🐕 ❓ 🤔",
-            "🐶 😊 🌟",
-            "👂 🐩 ⬆️",
-            "👀 💼 👥",
-            "🦴 👀 ❓",
-            "🐕 🔄 💫",
-            "🐩 🪑 ✨",
-            "🐶 👁️ 🥺",
-            "🐕 🙇‍♂️ 🎮",
-            "🐾 🔊 ❗",
-            "🐶 🤧 ✨",
-            "🐕‍🦺 💨 🌀",
-            "🐾 💨 💨"
+            "❗",
+            "👀 ",
+            "❓",
+            "🌀"
         ];
         this.messageText = cuteBarks[Math.floor(Math.random() * cuteBarks.length)];
         this.messageTime = 60;
