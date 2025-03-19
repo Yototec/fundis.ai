@@ -438,6 +438,9 @@ body {
 
     /* Add extra padding for iOS bottom bar in terminal view */
     #terminalContent {
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; 
         padding-bottom: env(safe-area-inset-bottom);
     }
 
