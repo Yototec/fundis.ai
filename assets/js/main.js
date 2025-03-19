@@ -1605,42 +1605,12 @@ function handleApiStatusDotClick() {
         updateConnectionStatus('connecting');
         connectToApi();
     }
-
-    // Reset any keyboard-related state
-    document.body.classList.remove('keyboard-open');
-
-    // For mobile - ensure view is reset
-    if (isMobileView) {
-        setTimeout(() => {
-            window.scrollTo(0, 0);
-        }, 100);
-    }
 }
 
 // Add event listener for the API key input to allow pressing Enter to connect
 document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKey');
     const endBlockInput = document.getElementById('endBlock');
-
-    // Fix for mobile keyboard issues
-    // Add these event listeners to handle keyboard appearance/disappearance
-    const inputs = document.querySelectorAll('input, select');
-    inputs.forEach(input => {
-        input.addEventListener('focus', () => {
-            // When an input is focused, add a class to the body
-            document.body.classList.add('keyboard-open');
-        });
-
-        input.addEventListener('blur', () => {
-            // When focus leaves an input, remove the class
-            document.body.classList.remove('keyboard-open');
-
-            // On iOS, need to force redraw sometimes
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 100);
-        });
-    });
 
     // Add a touchstart event listener to the API status dot 
     // to ensure it works after keyboard is closed
@@ -2096,37 +2066,13 @@ function fetchAndUpdateBlockHeight() {
 // Add this function to handle window resize events better
 window.addEventListener('resize', () => {
     const newIsMobileView = window.innerWidth < 768;
-
-    // Reset offset when switching view modes
-    if (isMobileView !== newIsMobileView) {
-        canvasOffset = { x: 0, y: 0 };
-        // Force a redraw
-        requestAnimationFrame(draw);
-    }
-
     isMobileView = newIsMobileView;
-
-    // Reset scroll position when keyboard closes (iOS)
-    if (!document.activeElement ||
-        (document.activeElement.tagName !== 'INPUT' &&
-            document.activeElement.tagName !== 'SELECT')) {
-        window.scrollTo(0, 0);
-    }
 });
 
 // Fix for iOS keyboard issues - detect keyboard closing
 document.addEventListener('focusout', (e) => {
     // Only run on mobile
     if (!isMobileView) return;
-
-    // If the focused element is not an input or select, restore scroll position
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
-        // Small delay to let iOS finish keyboard animation
-        setTimeout(() => {
-            window.scrollTo(0, 0);
-            document.body.classList.remove('keyboard-open');
-        }, 300);
-    }
 });
 
 // Add a function to handle terminal form submission
@@ -2140,11 +2086,6 @@ function handleFormSubmission() {
 
         // Remove keyboard-open class
         document.body.classList.remove('keyboard-open');
-
-        // Reset scroll position
-        setTimeout(() => {
-            window.scrollTo(0, 0);
-        }, 300);
     }
 
     // Connect to API if not already connected
@@ -2167,12 +2108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => {
             // When switching tabs, reset any keyboard-related state
             document.body.classList.remove('keyboard-open');
-
-            if (isMobileView) {
-                setTimeout(() => {
-                    window.scrollTo(0, 0);
-                }, 100);
-            }
         });
     });
 });
