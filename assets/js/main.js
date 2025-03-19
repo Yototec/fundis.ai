@@ -379,12 +379,56 @@ function drawSpeechBubble(x, y, text) {
     }
 }
 
+// Add this function to draw a light glow effect around workstations
+function drawWorkstationGlow(x, y, radius) {
+    // Create a radial gradient for the glow effect
+    const gradient = ctx.createRadialGradient(
+        x, y, 0,
+        x, y, radius
+    );
+    
+    // Soft yellow light that fades to transparent
+    gradient.addColorStop(0, 'rgba(255, 240, 180, 0.5)');
+    gradient.addColorStop(0.6, 'rgba(255, 220, 120, 0.25)');
+    gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+}
+
 function drawOffice() {
     ctx.fillStyle = COLORS.sky;
     ctx.fillRect(0, -GRID_SIZE, canvas.width, GRID_SIZE);
 
     drawClouds();
 
+    // Check if we're in dark mode to add workstation lighting
+    const isDarkMode = document.body.classList.contains('dark-theme');
+    
+    // If in dark mode, first draw the workstation lights under everything
+    if (isDarkMode) {
+        // Define workstation positions
+        const workstationPositions = [
+            { x: 6, y: 5 },           // Event
+            { x: 6, y: 15 },          // Sentiment
+            { x: COLS - 10, y: 5 },   // Market
+            { x: COLS - 10, y: 15 }   // Quant
+        ];
+        
+        // Draw light for each workstation
+        for (const pos of workstationPositions) {
+            // Convert grid coordinates to pixel coordinates (center of the cell)
+            const pixelX = (pos.x + 0.5) * GRID_SIZE;
+            const pixelY = (pos.y + 0.5) * GRID_SIZE;
+            
+            // Draw the glow with a large radius
+            drawWorkstationGlow(pixelX, pixelY, GRID_SIZE * 4);
+        }
+    }
+    
+    // Continue with the normal drawing code
     for (let y = 0; y < ROWS; y++) {
         for (let x = 0; x < COLS; x++) {
             const cellX = x * GRID_SIZE;
@@ -3026,12 +3070,22 @@ function updateThemeIcon(isDarkTheme) {
         // Dark mode - night sky colors
         COLORS.sky = '#0a1a2a';  // Dark blue for night sky
         COLORS.cloud = '#333333'; // Darker clouds for night time
+        // Also update office colors for dark mode
+        COLORS.carpet = '#E6E6E6'; // Darker carpet
+        COLORS.floor = '#E9E9E9';  // Darker floor
+        COLORS.wall = '#B2B2B2';   // Darker walls
+        
         // Sun icon for switching to light mode
         iconPath.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
     } else {
         // Light mode - day sky colors
         COLORS.sky = '#87CEEB';  // Light blue for day sky
         COLORS.cloud = '#ffffff'; // White clouds for day time
+        // Reset office colors for light mode
+        COLORS.carpet = '#f8f8f8'; // Original carpet
+        COLORS.floor = '#ffffff';  // Original floor
+        COLORS.wall = '#cccccc';   // Original walls
+        
         // Moon icon for switching to dark mode
         iconPath.setAttribute('d', 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z');
     }
@@ -3048,7 +3102,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         // Set dark theme colors 
-        COLORS.sky = '#0a1a2a';  // Dark blue for night sky
-        COLORS.cloud = '#333333'; // Darker clouds for night time
+        COLORS.sky = '#0a1a2a';     // Dark blue for night sky
+        COLORS.cloud = '#333333';   // Darker clouds for night time
+        COLORS.carpet = '#E6E6E6';  // Darker carpet
+        COLORS.floor = '#E9E9E9';   // Darker floor
+        COLORS.wall = '#B2B2B2';    // Darker walls
     }
 });
