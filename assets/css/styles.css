@@ -130,13 +130,18 @@ body {
     }
 
     #fetch-status {
-        display: block;
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(25px + env(safe-area-inset-bottom));
         background-color: #333;
-        color: #0f0;
         padding: 8px 12px;
-        border-radius: 5px;
-        margin: 0 auto 10px auto;
-        /* etc. */
+        border-radius: 6px;
+        color: #0f0;
+        z-index: 999;
+        text-align: center;
+        max-width: 80%;
+        box-sizing: border-box;
     }
 
     #main-container {
@@ -399,27 +404,24 @@ body {
     left: 0;
     width: 100%;
     background-color: #f0f2f5;
-    /* Same as desktop background */
     color: #000;
     text-align: center;
-    padding: 8px 0;
     font-size: 14px;
     font-family: monospace;
     z-index: 1000;
-    /* Add safe area padding for iOS */
-    padding-bottom: 8px;
+    padding: 8px 0;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
+}
+
+@supports(padding: max(0px)) {
+    #global-footer {
+        padding-bottom: calc(8px + max(0px, env(safe-area-inset-bottom)));
+    }
 }
 
 @media (max-width: 767px) {
     #global-footer {
-        padding: 6px 0;
         font-size: 12px;
-        background-color: #f0f2f5;
-        /* Same as desktop background */
-        color: #000;
-        /* Safe area padding for iOS */
-        padding-bottom: calc(6px + env(safe-area-inset-bottom));
     }
 
     #main-container {

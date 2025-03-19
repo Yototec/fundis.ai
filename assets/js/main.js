@@ -2043,12 +2043,6 @@ function fetchAndUpdateBlockHeight() {
         });
 }
 
-// Add this function to handle window resize events better
-window.addEventListener('resize', () => {
-    const newIsMobileView = window.innerWidth < 768;
-    isMobileView = newIsMobileView;
-});
-
 // Add a function to handle terminal form submission
 function handleFormSubmission() {
     // If we're on mobile, we need to reset the view
