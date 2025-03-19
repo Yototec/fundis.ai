@@ -230,7 +230,7 @@ body {
     flex: 1;
     overflow-y: auto;
     margin-bottom: 10px;
-    white-space: pre-wrap;
+    white-space: pre-line;
 }
 
 #branding {
