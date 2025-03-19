@@ -656,10 +656,12 @@ function drawOffice() {
                     ctx.fillStyle = COLORS.desk;
                     ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
 
-                    ctx.fillStyle = '#7a3b11';
+                    // Use darker wood color in dark mode
+                    ctx.fillStyle = isDarkMode ? '#5a2906' : '#7a3b11';
                     ctx.fillRect(cellX + 2, cellY + 2, GRID_SIZE - 4, GRID_SIZE - 4);
 
-                    ctx.strokeStyle = '#5d2906';
+                    // Darker stroke in dark mode
+                    ctx.strokeStyle = isDarkMode ? '#401d04' : '#5d2906';
                     ctx.lineWidth = 0.5;
                     ctx.beginPath();
 
@@ -693,7 +695,8 @@ function drawOffice() {
 
                 case OBJECTS.COMPUTER:
                     // Draw desk surface under computer
-                    ctx.fillStyle = '#f5f5f5';
+                    // Use a grey background in dark mode instead of white
+                    ctx.fillStyle = isDarkMode ? '#DEDEDE' : '#f5f5f5';
                     ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
 
                     // Monitor stand - more elegant design
@@ -875,11 +878,12 @@ function drawOffice() {
                     const centerY = Math.floor(ROWS / 2) - 0.5;
                     const isCenterPiece = (x === Math.floor(centerX) && y === Math.floor(centerY));
 
-                    // Base/counter
-                    ctx.fillStyle = '#8B4513';
+                    // Base/counter - darker in dark mode
+                    ctx.fillStyle = isDarkMode ? '#6B3010' : '#8B4513';
                     ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
 
-                    ctx.fillStyle = '#D2B48C';
+                    // Counter surface - darker in dark mode
+                    ctx.fillStyle = isDarkMode ? '#A28A60' : '#D2B48C';
                     ctx.fillRect(cellX + 2, cellY + 2, GRID_SIZE - 4, GRID_SIZE - 4);
 
                     // Draw different parts of the coffee machine based on position
@@ -982,7 +986,8 @@ function drawOffice() {
                     ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
 
                     // Table surface with wood grain
-                    ctx.fillStyle = '#8B5A2B';
+                    // Darker table surface in dark mode
+                    ctx.fillStyle = isDarkMode ? '#6b4226' : '#8B5A2B';
                     ctx.fillRect(cellX + 2, cellY + 2, GRID_SIZE - 4, GRID_SIZE - 4);
 
                     // Wood grain effect
@@ -1028,8 +1033,8 @@ function drawOffice() {
                     let isBottomRightCorner = isBottomEdge && isRightEdge;
 
                     // Always draw the table top surface
-                    // Dark wood top with consistent coloring
-                    ctx.fillStyle = '#3A2313';
+                    // Dark wood top with consistent coloring - darker in dark mode
+                    ctx.fillStyle = isDarkMode ? '#2a1506' : '#3A2313';
 
                     // Draw the top surface with seamless connections
                     ctx.fillRect(
