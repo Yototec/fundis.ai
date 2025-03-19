@@ -1336,8 +1336,15 @@ function updateTerminalDisplay() {
 <div class="form-group">
 <label for="endBlock">Please input ending Block:</label>
 <input type="number" id="endBlock" class="terminal-input" value="${endBlock}" placeholder="Enter a number ≥ 200 (multiple of 50)" min="200" step="50">
+<div id="block-timestamp"></div>
 </div>
 </div>`.trim();
+
+        // Fetch timestamp for the current block number
+        const currentBlockNumber = parseInt(endBlock);
+        if (!isNaN(currentBlockNumber) && currentBlockNumber >= 200) {
+            fetchAndDisplayBlockTimestamp(currentBlockNumber);
+        }
     } else {
         // Show terminal history when connected
         terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>\n=== Terminal History ===\n\n${terminalHistory.join('\n')}\n`;
@@ -1624,11 +1631,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isNaN(value) || value < 200) {
                 endBlockInput.value = 200; // Reset to minimum valid value
                 updateSyncStatus("End Block must be ≥ 200");
+                fetchAndDisplayBlockTimestamp(200);
             } else if (value % 50 !== 0) {
                 // Round to nearest multiple of 50
                 const roundedValue = Math.round(value / 50) * 50;
                 endBlockInput.value = roundedValue;
                 updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
+                fetchAndDisplayBlockTimestamp(roundedValue);
+            } else {
+                fetchAndDisplayBlockTimestamp(value);
             }
         });
 
@@ -2061,6 +2072,9 @@ function fetchAndUpdateBlockHeight() {
                     // Only update the field if it's currently empty or has the default value
                     if (!endBlockInput.value || endBlockInput.value === "200") {
                         endBlockInput.value = endBlockValue;
+                        
+                        // Also fetch and display the timestamp for this block
+                        fetchAndDisplayBlockTimestamp(endBlockValue);
                     }
                 }
             }
@@ -2094,6 +2108,43 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.classList.remove('keyboard-open');
         });
     });
+
+    // Add event listeners for the endBlock input to fetch timestamp
+    const endBlockInput = document.getElementById('endBlock');
+    if (endBlockInput) {
+        // Validate on change and fetch timestamp when value is valid
+        endBlockInput.addEventListener('change', () => {
+            const value = parseInt(endBlockInput.value);
+
+            if (isNaN(value) || value < 200) {
+                endBlockInput.value = 200; // Reset to minimum valid value
+                updateSyncStatus("End Block must be ≥ 200");
+                fetchAndDisplayBlockTimestamp(200);
+            } else if (value % 50 !== 0) {
+                // Round to nearest multiple of 50
+                const roundedValue = Math.round(value / 50) * 50;
+                endBlockInput.value = roundedValue;
+                updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
+                fetchAndDisplayBlockTimestamp(roundedValue);
+            } else {
+                fetchAndDisplayBlockTimestamp(value);
+            }
+        });
+
+        // Also fetch timestamp when input loses focus
+        endBlockInput.addEventListener('blur', () => {
+            const value = parseInt(endBlockInput.value);
+            if (!isNaN(value) && value >= 200) {
+                fetchAndDisplayBlockTimestamp(value);
+            }
+        });
+
+        // Fetch timestamp for initial value if present
+        const initialValue = parseInt(endBlockInput.value);
+        if (!isNaN(initialValue) && initialValue >= 200) {
+            fetchAndDisplayBlockTimestamp(initialValue);
+        }
+    }
 });
 
 function formatAsHtmlTable(data) {
@@ -2637,4 +2688,51 @@ function findNearestWalkablePosition(x, y, maxRadius) {
     // If we get here, we couldn't find a walkable position
     // Return a default safe position
     return { x: Math.floor(COLS / 2), y: ROWS - 3 };
+}
+
+// Add this function to fetch and display the block timestamp
+function fetchAndDisplayBlockTimestamp(blockNumber) {
+    if (!blockNumber || isNaN(blockNumber) || blockNumber < 0) {
+        return;
+    }
+
+    // Create or get the timestamp display element
+    let timestampDisplay = document.getElementById('block-timestamp');
+    if (!timestampDisplay) {
+        // Create the element if it doesn't exist
+        timestampDisplay = document.createElement('div');
+        timestampDisplay.id = 'block-timestamp';
+        timestampDisplay.style.fontSize = '12px';
+        timestampDisplay.style.marginTop = '5px';
+        timestampDisplay.style.color = '#00FFC8';
+        
+        // Insert after the endBlock input
+        const endBlockInput = document.getElementById('endBlock');
+        if (endBlockInput && endBlockInput.parentNode) {
+            endBlockInput.parentNode.appendChild(timestampDisplay);
+        }
+    }
+
+    // Show loading state
+    timestampDisplay.textContent = 'Fetching block timestamp...';
+
+    // Fetch the timestamp from the API
+    fetch(`https://api.sentichain.com/blockchain/get_timestamp_from_block_number?network=mainnet&block_number=${blockNumber}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.timestamp) {
+                // Convert UTC timestamp to local time
+                const utcDate = new Date(data.timestamp);
+                const localDateString = utcDate.toLocaleString();
+                
+                // Update the display
+                timestampDisplay.innerHTML = `Block ${blockNumber} timestamp: <span style="color: white">${localDateString}</span> (local time)`;
+            } else {
+                timestampDisplay.textContent = `Could not retrieve timestamp for block ${blockNumber}`;
+            }
+        })
+        .catch(error => {
+            console.error("Error fetching block timestamp:", error);
+            timestampDisplay.textContent = `Error fetching timestamp for block ${blockNumber}`;
+        });
 }
