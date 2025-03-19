@@ -2117,7 +2117,14 @@ function updateTerminalDisplay() {
                     <select id="symbolSelect" class="terminal-select">
                         <option value="BTC" ${selectedSymbol === 'BTC' ? 'selected' : ''}>BTC</option>
                         <option value="ETH" ${selectedSymbol === 'ETH' ? 'selected' : ''}>ETH</option>
+                        <option value="SOL" ${selectedSymbol === 'SOL' ? 'selected' : ''}>SOL</option>
+                        <option value="XRP" ${selectedSymbol === 'XRP' ? 'selected' : ''}>XRP</option>
+                        <option value="ADA" ${selectedSymbol === 'ADA' ? 'selected' : ''}>ADA</option>
+                        <option value="AVAX" ${selectedSymbol === 'AVAX' ? 'selected' : ''}>AVAX</option>
                         <option value="DOGE" ${selectedSymbol === 'DOGE' ? 'selected' : ''}>DOGE</option>
+                        <option value="TRX" ${selectedSymbol === 'TRX' ? 'selected' : ''}>TRX</option>
+                        <option value="LINK" ${selectedSymbol === 'LINK' ? 'selected' : ''}>LINK</option>
+                        <option value="DOT" ${selectedSymbol === 'DOT' ? 'selected' : ''}>DOT</option>
                     </select>
                 </div>
                 <div class="form-group">
