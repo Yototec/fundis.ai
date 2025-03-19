@@ -1206,24 +1206,6 @@ function update() {
     dog.update();
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-
-    if (isMobileView) {
-        ctx.translate(canvasOffset.x + 50, canvasOffset.y);
-    }
-
-    drawOffice();
-    drawPeople();
-
-    // Draw the dog
-    dog.draw();
-
-    ctx.restore();
-}
-
 function animate() {
     update();
     requestAnimationFrame(draw);
