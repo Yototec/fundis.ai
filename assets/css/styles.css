@@ -404,6 +404,9 @@ body {
     font-size: 14px;
     font-family: monospace;
     z-index: 1000;
+    /* Add safe area padding for iOS */
+    padding-bottom: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 767px) {
@@ -413,16 +416,20 @@ body {
         background-color: #f0f2f5;
         /* Same as desktop background */
         color: #000;
+        /* Safe area padding for iOS */
+        padding-bottom: calc(6px + env(safe-area-inset-bottom));
     }
 
     #main-container {
         margin-bottom: 30px;
         /* Make space for the footer */
+        margin-bottom: calc(30px + env(safe-area-inset-bottom));
     }
 
     #terminalBottomBar {
         margin-bottom: 20px;
         /* Increase bottom margin to prevent overlap with footer */
+        margin-bottom: calc(20px + env(safe-area-inset-bottom));
     }
     
     /* Add styles for keyboard interaction */
@@ -457,6 +464,19 @@ body {
         position: sticky;
         top: 0;
         z-index: 1200;
+    }
+    
+    /* Add extra padding for iOS bottom bar in terminal view */
+    #terminalContent {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .terminal-form {
+        margin-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .submit-container {
+        margin-bottom: calc(30px + env(safe-area-inset-bottom));
     }
 }
 
