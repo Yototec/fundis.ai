@@ -431,48 +431,48 @@ body {
         /* Increase bottom margin to prevent overlap with footer */
         margin-bottom: calc(20px + env(safe-area-inset-bottom));
     }
-    
+
     /* Add styles for keyboard interaction */
     body.keyboard-open {
         width: 100%;
         height: 100%;
         overflow: hidden;
     }
-    
+
     body.keyboard-open #terminalBox {
         /* Ensure terminal stays in view */
         position: relative;
         z-index: 1100;
     }
-    
+
     body.keyboard-open #terminalContent {
         max-height: 30vh;
         overflow-y: auto;
     }
-    
+
     body.keyboard-open #api-status-dot {
         /* Make sure the status dot stays visible and interactive */
         position: sticky;
         top: 10px;
         z-index: 1200;
     }
-    
+
     body.keyboard-open #mobile-tabs {
         /* Keep tabs visible when keyboard is open */
         position: sticky;
         top: 0;
         z-index: 1200;
     }
-    
+
     /* Add extra padding for iOS bottom bar in terminal view */
     #terminalContent {
         padding-bottom: env(safe-area-inset-bottom);
     }
-    
+
     .terminal-form {
         margin-bottom: env(safe-area-inset-bottom);
     }
-    
+
     .submit-container {
         margin-bottom: calc(30px + env(safe-area-inset-bottom));
     }
@@ -597,7 +597,7 @@ body.dark-theme #officeCanvas {
     transition: background-color 0.2s;
 }
 
-.terminal-submit-btn:hover, 
+.terminal-submit-btn:hover,
 .terminal-submit-btn:active {
     background-color: #00cc00;
 }
@@ -622,14 +622,14 @@ body.dark-theme #officeCanvas {
         padding: 6px 8px;
         font-size: 13px;
     }
-    
+
     .terminal-submit-btn {
         padding: 12px 20px;
         font-size: 16px;
         margin-top: 20px;
         margin-bottom: 10px;
     }
-    
+
     .submit-container {
         margin-bottom: 30px;
     }
@@ -638,4 +638,29 @@ body.dark-theme #officeCanvas {
 /* Dark theme terminal style */
 body.dark-theme #terminalBox {
     background-color: #4b4b4b;
+}
+
+/* Inside your styles.css */
+.analyst-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    font-family: monospace;
+    color: #0f0;
+    /* same color as your terminal text */
+}
+
+.analyst-table th,
+.analyst-table td {
+    border: 1px solid #0f0;
+    padding: 6px 8px;
+    vertical-align: top;
+    word-break: break-word;
+    /* helps with very long text */
+}
+
+.analyst-table th {
+    background-color: #555;
+    /* or #333, a bit darker for header row */
 }

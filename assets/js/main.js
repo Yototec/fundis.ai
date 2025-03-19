@@ -665,52 +665,39 @@ function wrapText(text, maxWidth) {
 // Modified version that handles the specific format of Event Analyst data
 function formatAnalystData(data) {
     try {
-        // Use a more general pattern to detect block headers with any numeric range
+        // Check if this looks like multiple "Block X-Y" sections
         const blockHeaderPattern = /Block \d+-\d+:/;
-
-        // Check if this is analyst data by looking for block header pattern
         if (typeof data === 'string' && blockHeaderPattern.test(data)) {
-            // Split the string by block sections
             const blocks = data.split(/Block \d+-\d+:/g).filter(block => block.trim());
             let formattedData = "";
 
-            // Get the original block headers
-            const blockHeaders = [];
-            let tempData = data;
+            // Extract the matching block headers
             const blockRegex = /Block \d+-\d+:/g;
-            let match;
-            while ((match = blockRegex.exec(tempData)) !== null) {
-                blockHeaders.push(match[0]);
-            }
+            const headers = data.match(blockRegex) || [];
 
-            // Process each block
-            blocks.forEach((block, index) => {
-                if (index < blockHeaders.length) {
-                    formattedData += `\n${blockHeaders[index]}\n`;
+            blocks.forEach((block, idx) => {
+                if (idx < headers.length) {
+                    formattedData += `<div><strong>${headers[idx]}</strong></div>\n`;
                 }
 
-                try {
-                    // Extract the JSON array from the block
-                    const jsonMatch = block.match(/\[\s*\{[\s\S]*\}\s*\]/);
-                    if (jsonMatch) {
-                        const jsonData = JSON.parse(jsonMatch[0]);
-                        formattedData += formatAsTable(jsonData);
-                    } else {
-                        formattedData += block; // If no JSON found, keep original
-                    }
-                } catch (e) {
-                    console.error("Error parsing block JSON:", e);
-                    formattedData += block; // On error, keep original
+                // Try to find JSON array within each block
+                const jsonMatch = block.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+                if (jsonMatch) {
+                    // Replace ASCII with the new HTML table
+                    const tableHtml = formatAsHtmlTable(jsonMatch[0]); 
+                    formattedData += tableHtml;
+                } else {
+                    // No JSON found, just keep the raw text (escaped) in a <pre>
+                    formattedData += `<pre>${escapeHtml(block)}</pre>`;
                 }
             });
-
             return formattedData;
         }
-
-        return data; // Return original if not analyst data with block headers
+        // If it doesn't match the "Block" pattern, handle as normal
+        return data;
     } catch (error) {
-        console.error("Error formatting Analyst data:", error);
-        return data; // Return original on error
+        console.error("Error formatting data:", error);
+        return data; // fallback
     }
 }
 
@@ -2111,3 +2098,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function formatAsHtmlTable(data) {
+    // If the data is a JSON string, parse it
+    const jsonData = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!Array.isArray(jsonData)) {
+        // If it's not an array, just return it as plain text or handle gracefully
+        return `<div>${escapeHtml(String(data))}</div>`;
+    }
+
+    // Build HTML table header + body
+    let html = `
+      <table class="analyst-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    jsonData.forEach(item => {
+        // Safely handle missing fields
+        const ts = item.timestamp ?? "";
+        const summary = item.summary ?? "";
+
+        html += `
+          <tr>
+            <td>${escapeHtml(ts)}</td>
+            <td style="white-space: pre-wrap;">${escapeHtml(summary)}</td>
+          </tr>
+        `;
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    return html;
+}
+
+// Utility to sanitize strings (so untrusted text doesn't break HTML)
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
