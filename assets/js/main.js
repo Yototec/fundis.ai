@@ -2988,26 +2988,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Add a submit button for better mobile experience
-    const terminalContent = document.getElementById('terminalContent');
-    if (terminalContent && isMobileView) {
-        // Check if we need to add the button (only add if not connected and no button exists)
-        if (!apiConnected && !document.getElementById('mobile-submit-btn')) {
-            const submitBtn = document.createElement('button');
-            submitBtn.id = 'mobile-submit-btn';
-            submitBtn.className = 'terminal-submit-btn';
-            submitBtn.textContent = 'Connect';
-            submitBtn.addEventListener('click', handleFormSubmission);
-            
-            // Add button after the last form group
-            const formGroups = document.querySelectorAll('.form-group');
-            if (formGroups.length > 0) {
-                const lastGroup = formGroups[formGroups.length - 1];
-                const btnContainer = document.createElement('div');
-                btnContainer.className = 'form-group submit-container';
-                btnContainer.appendChild(submitBtn);
-                lastGroup.parentNode.insertBefore(btnContainer, lastGroup.nextSibling);
-            }
-        }
-    }
+    // Remove the mobile submit button code block that was here
 });
