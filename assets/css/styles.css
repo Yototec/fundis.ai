@@ -424,6 +424,40 @@ body {
         margin-bottom: 20px;
         /* Increase bottom margin to prevent overlap with footer */
     }
+    
+    /* Add styles for keyboard interaction */
+    body.keyboard-open {
+        /* Prevent content from shifting when keyboard opens */
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    body.keyboard-open #terminalBox {
+        /* Ensure terminal stays in view */
+        position: relative;
+        z-index: 1100;
+    }
+    
+    body.keyboard-open #terminalContent {
+        max-height: 30vh;
+        overflow-y: auto;
+    }
+    
+    body.keyboard-open #api-status-dot {
+        /* Make sure the status dot stays visible and interactive */
+        position: sticky;
+        top: 10px;
+        z-index: 1200;
+    }
+    
+    body.keyboard-open #mobile-tabs {
+        /* Keep tabs visible when keyboard is open */
+        position: sticky;
+        top: 0;
+        z-index: 1200;
+    }
 }
 
 #chain-info a {
@@ -475,6 +509,31 @@ body {
     color: #0f0;
 }
 
+/* Mobile submit button */
+.terminal-submit-btn {
+    background-color: #0f0;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 15px;
+    transition: background-color 0.2s;
+}
+
+.terminal-submit-btn:hover, 
+.terminal-submit-btn:active {
+    background-color: #00cc00;
+}
+
+.submit-container {
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
 /* Mobile-specific form styling */
 @media (max-width: 767px) {
     .terminal-form {
@@ -489,5 +548,16 @@ body {
     .terminal-select {
         padding: 6px 8px;
         font-size: 13px;
+    }
+    
+    .terminal-submit-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+    
+    .submit-container {
+        margin-bottom: 30px;
     }
 }

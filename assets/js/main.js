@@ -2369,7 +2369,15 @@ function roundedRect(context, x, y, width, height, radius) {
 }
 
 // Add click event listener to the API status dot
-document.getElementById('api-status-dot').addEventListener('click', () => {
+document.addEventListener('DOMContentLoaded', () => {
+    const apiStatusDot = document.getElementById('api-status-dot');
+    if (apiStatusDot) {
+        apiStatusDot.addEventListener('click', handleApiStatusDotClick);
+    }
+});
+
+// Separate function to handle API status dot clicks
+function handleApiStatusDotClick() {
     if (apiConnected) {
         disconnectFromApi();
     } else {
@@ -2383,12 +2391,65 @@ document.getElementById('api-status-dot').addEventListener('click', () => {
         updateConnectionStatus('connecting');
         connectToApi();
     }
-});
+    
+    // Reset any keyboard-related state
+    document.body.classList.remove('keyboard-open');
+    
+    // For mobile - ensure view is reset
+    if (isMobileView) {
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+        }, 100);
+    }
+}
 
 // Add event listener for the API key input to allow pressing Enter to connect
 document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKey');
     const endBlockInput = document.getElementById('endBlock');
+
+    // Fix for mobile keyboard issues
+    // Add these event listeners to handle keyboard appearance/disappearance
+    const inputs = document.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+            // When an input is focused, add a class to the body
+            document.body.classList.add('keyboard-open');
+        });
+        
+        input.addEventListener('blur', () => {
+            // When focus leaves an input, remove the class
+            document.body.classList.remove('keyboard-open');
+            
+            // On iOS, need to force redraw sometimes
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
+        });
+    });
+
+    // Add a touchstart event listener to the API status dot 
+    // to ensure it works after keyboard is closed
+    const apiStatusDot = document.getElementById('api-status-dot');
+    if (apiStatusDot) {
+        // Use touchstart for more reliable mobile interaction
+        apiStatusDot.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default to avoid double firing
+            if (apiConnected) {
+                disconnectFromApi();
+            } else {
+                const apiKey = document.getElementById('apiKey').value;
+                if (!apiKey) {
+                    updateSyncStatus("Error: API Key is required");
+                    return;
+                }
+
+                // First show connecting state
+                updateConnectionStatus('connecting');
+                connectToApi();
+            }
+        });
+    }
 
     // Add validation for endBlock input
     if (endBlockInput) {
@@ -2841,3 +2902,112 @@ function fetchAndUpdateBlockHeight() {
             console.error("Error fetching blockchain data", err);
         });
 }
+
+// Add this function to handle window resize events better
+window.addEventListener('resize', () => {
+    const newIsMobileView = window.innerWidth < 768;
+    
+    // Reset offset when switching view modes
+    if (isMobileView !== newIsMobileView) {
+        canvasOffset = { x: 0, y: 0 };
+        // Force a redraw
+        requestAnimationFrame(draw);
+    }
+    
+    isMobileView = newIsMobileView;
+    
+    // Reset scroll position when keyboard closes (iOS)
+    if (!document.activeElement || 
+        (document.activeElement.tagName !== 'INPUT' && 
+         document.activeElement.tagName !== 'SELECT')) {
+        window.scrollTo(0, 0);
+    }
+});
+
+// Fix for iOS keyboard issues - detect keyboard closing
+document.addEventListener('focusout', (e) => {
+    // Only run on mobile
+    if (!isMobileView) return;
+    
+    // If the focused element is not an input or select, restore scroll position
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+        // Small delay to let iOS finish keyboard animation
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+            document.body.classList.remove('keyboard-open');
+        }, 300);
+    }
+});
+
+// Add a function to handle terminal form submission
+function handleFormSubmission() {
+    // If we're on mobile, we need to reset the view
+    if (isMobileView) {
+        // Blur any active element to dismiss keyboard
+        if (document.activeElement) {
+            document.activeElement.blur();
+        }
+        
+        // Remove keyboard-open class
+        document.body.classList.remove('keyboard-open');
+        
+        // Reset scroll position
+        setTimeout(() => {
+            window.scrollTo(0, 0);
+        }, 300);
+    }
+    
+    // Connect to API if not already connected
+    if (!apiConnected) {
+        const apiKey = document.getElementById('apiKey').value;
+        if (apiKey) {
+            updateConnectionStatus('connecting');
+            connectToApi();
+        } else {
+            updateSyncStatus("Error: API Key is required");
+        }
+    }
+}
+
+// Add this to the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing code ...
+    
+    // Add event listeners for tab switching on mobile
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // When switching tabs, reset any keyboard-related state
+            document.body.classList.remove('keyboard-open');
+            
+            if (isMobileView) {
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                }, 100);
+            }
+        });
+    });
+    
+    // Add a submit button for better mobile experience
+    const terminalContent = document.getElementById('terminalContent');
+    if (terminalContent && isMobileView) {
+        // Check if we need to add the button (only add if not connected and no button exists)
+        if (!apiConnected && !document.getElementById('mobile-submit-btn')) {
+            const submitBtn = document.createElement('button');
+            submitBtn.id = 'mobile-submit-btn';
+            submitBtn.className = 'terminal-submit-btn';
+            submitBtn.textContent = 'Connect';
+            submitBtn.addEventListener('click', handleFormSubmission);
+            
+            // Add button after the last form group
+            const formGroups = document.querySelectorAll('.form-group');
+            if (formGroups.length > 0) {
+                const lastGroup = formGroups[formGroups.length - 1];
+                const btnContainer = document.createElement('div');
+                btnContainer.className = 'form-group submit-container';
+                btnContainer.appendChild(submitBtn);
+                lastGroup.parentNode.insertBefore(btnContainer, lastGroup.nextSibling);
+            }
+        }
+    }
+});
