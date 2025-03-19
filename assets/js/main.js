@@ -194,12 +194,12 @@ function initOffice() {
         const clickY = Math.floor((e.clientY - rect.top) / GRID_SIZE);
 
         let clickedOnAnalyst = false;
-        
+
         // Check if clicked on an analyst
         for (const person of people) {
             if (person.x === clickX && person.y === clickY) {
                 clickedOnAnalyst = true;
-                
+
                 // Only show analyst data if analysis is completed
                 if (analysisCompleted) {
                     const ticker = person.ticker.toLowerCase();
@@ -216,7 +216,7 @@ function initOffice() {
                 break;
             }
         }
-        
+
         // If clicked elsewhere and we have combined results, show them
         if (!clickedOnAnalyst && combinedAnalysisResults && analysisCompleted) {
             const terminalContent = document.getElementById('terminalContent');
@@ -1201,7 +1201,7 @@ function connectToApi() {
             const timer = activeTimers.pop();
             clearTimeout(timer);
         }
-        
+
         // Abort any ongoing fetch requests
         while (abortControllers.length > 0) {
             const controller = abortControllers.pop();
@@ -1211,14 +1211,14 @@ function connectToApi() {
                 console.error("Error aborting fetch:", e);
             }
         }
-        
+
         // Reset analysis flags
         apiConnected = true;
         analysisInProgress = true;
         isTaskInProgress = true;
         combinedAnalysisResults = null;
         analysisCompleted = false;
-        
+
         updateConnectionStatus(true);
 
         // Update terminal content to show analyst is in action
@@ -1260,13 +1260,13 @@ function connectToApi() {
                 if (index !== -1) {
                     activeTimers.splice(index, 1);
                 }
-                
+
                 // Only start if we're still connected
                 if (!apiConnected) {
                     debugLog("Connection lost before starting analysis");
                     return;
                 }
-                
+
                 startSequentialAnalysis(
                     eventAnalyst,
                     selectedSymbol,
@@ -1337,7 +1337,7 @@ function connectToApi() {
                     }
                 );
             }, 1000);
-            
+
             // Add to tracked timers
             activeTimers.push(timer);
         }
@@ -1453,7 +1453,7 @@ function formatAnalystData(data) {
     try {
         // Use a more general pattern to detect block headers with any numeric range
         const blockHeaderPattern = /Block \d+-\d+:/;
-        
+
         // Check if this is analyst data by looking for block header pattern
         if (typeof data === 'string' && blockHeaderPattern.test(data)) {
             // Split the string by block sections
@@ -1507,17 +1507,17 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
         debugLog("Sequential analysis aborted - disconnected");
         return;
     }
-    
+
     // Calculate chunk ranges based on endBlock
     const chunkSize = 50;
     const startBlock = Math.max(0, endBlock - 200);
-    
+
     // Define the chunks to analyze
     const chunks = [];
     for (let start = startBlock; start < endBlock; start += chunkSize) {
-        chunks.push({ 
-            start: start, 
-            end: Math.min(start + chunkSize - 1, endBlock - 1) 
+        chunks.push({
+            start: start,
+            end: Math.min(start + chunkSize - 1, endBlock - 1)
         });
     }
 
@@ -1534,7 +1534,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             debugLog(`${analystName} analysis aborted - disconnected`);
             return;
         }
-        
+
         if (currentChunk >= chunks.length) {
             // All chunks processed
             updateSyncStatus(`${analystName} analysis complete!`);
@@ -1575,11 +1575,11 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                     if (index !== -1) {
                         activeTimers.splice(index, 1);
                     }
-                    
+
                     // If starting next analyst, don't set isTaskInProgress to false yet
                     onCompleteCallback();
                 }, 1000);
-                
+
                 // Add to tracked timers
                 activeTimers.push(timer);
             } else {
@@ -1630,13 +1630,13 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             if (index !== -1) {
                 activeTimers.splice(index, 1);
             }
-            
+
             // Skip if we've disconnected
             if (!apiConnected) {
                 debugLog(`${analystName} analysis of chunk ${currentChunk} aborted - disconnected`);
                 return;
             }
-            
+
             // Construct the API URL
             const apiUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=${summaryType}&chunk_start=${chunk.start}&chunk_end=${chunk.end}&api_key=${apiKey}`;
 
@@ -1648,7 +1648,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                         debugLog(`${analystName} processing of chunk result aborted - disconnected`);
                         return;
                     }
-                    
+
                     // Append result to all results
                     if (result) {
                         if (agentResults) agentResults += '\n\n';
@@ -1665,7 +1665,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                         debugLog(`${analystName} error handling aborted - disconnected`);
                         return;
                     }
-                    
+
                     console.error("Error fetching data:", error);
                     updateSyncStatus(`Error analyzing blocks ${chunk.start}-${chunk.end}: ${error.message}`);
 
@@ -1674,7 +1674,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
                     processNextChunk();
                 });
         }, 3000); // 3 second delay to simulate processing time
-        
+
         // Add to tracked timers
         activeTimers.push(timer);
     }
@@ -1687,13 +1687,13 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
 async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
     try {
         debugLog(`Fetching data from: ${apiUrl}`);
-        
+
         // Create an AbortController and add it to the tracking array
         const controller = new AbortController();
         abortControllers.push(controller);
-        
+
         const response = await fetch(apiUrl, { signal: controller.signal });
-        
+
         // Remove this controller from tracking after fetch is complete
         const index = abortControllers.indexOf(controller);
         if (index !== -1) {
@@ -1717,7 +1717,7 @@ async function fetchDataFromApi(apiUrl, symbol, chunkStart, chunkEnd) {
             console.log("Fetch aborted due to disconnection");
             return null;
         }
-        
+
         console.error("API call failed:", error);
         return `Error: Failed to fetch data for ${symbol} blocks ${chunkStart}-${chunkEnd}`;
     }
@@ -1729,22 +1729,22 @@ function disconnectFromApi() {
         apiConnected = false;
         updateConnectionStatus(false);
         stopTaskScheduler();
-        
+
         // Stop ongoing analysis
         analysisInProgress = false;
-        
+
         // Cancel all active timers
         while (activeTimers.length > 0) {
             const timer = activeTimers.pop();
             clearTimeout(timer);
         }
-        
+
         // Clear animation timer
         if (animationTimer) {
             clearInterval(animationTimer);
             animationTimer = null;
         }
-        
+
         // Abort any ongoing fetch requests
         while (abortControllers.length > 0) {
             const controller = abortControllers.pop();
@@ -1754,19 +1754,19 @@ function disconnectFromApi() {
                 console.error("Error aborting fetch:", e);
             }
         }
-        
+
         // Reset all state variables
         currentFetchingTicker = null;
         fetchQueue = [];
         isTaskInProgress = false;
         combinedAnalysisResults = null;
         analysisCompleted = false;
-        
+
         // Reset all people
         for (const p of people) {
             p.isFetching = false;
             p.state = 'idle';
-            
+
             // Restore original speak functionality if it was overridden
             if (p.originalSpeak) {
                 p.speak = p.originalSpeak;
@@ -1776,13 +1776,13 @@ function disconnectFromApi() {
 
         // Reset the terminal display to initial form state
         updateTerminalDisplay();
-        
+
         // Clear any status messages
         updateSyncStatus("");
-        
+
         // Restart animation with clean state
         start();
-        
+
         debugLog("API Disconnected - All processes terminated");
     }
 }
@@ -1809,7 +1809,8 @@ async function fetchChainData() {
     if (!apiConnected) return;
     try {
         debugLog("Fetching chain data...");
-        updateSyncStatus("Checking blockchain for new data...");
+        // Don't display block sync dialog in terminal anymore
+        // updateSyncStatus("Checking blockchain for new data..."); 
         const response = await fetch(CHAIN_LENGTH_API);
         const data = await response.json();
         if (data && data.chain_length) {
@@ -1817,18 +1818,21 @@ async function fetchChainData() {
             const chainInfoElement = document.getElementById('chain-info');
             chainInfoElement.innerHTML = `Block Height: <a href="https://sentichain.com/app?tab=BlockExplorer&block=last#" target="_blank">${chainLength}</a> (SentiChain ${data.network})`;
             if (chainLength > lastFetchTime) {
-                updateSyncStatus("Blockchain data sync complete.");
+                // Don't display block sync dialog in terminal anymore
+                // updateSyncStatus("Blockchain data sync complete.");
                 queueReasoningFetches(true);
                 lastFetchTime = chainLength;
             } else {
-                updateSyncStatus("No new blockchain data.");
+                // Don't display block sync dialog in terminal anymore
+                // updateSyncStatus("No new blockchain data.");
                 queueReasoningFetches(false);
             }
         }
     } catch (err) {
         console.error("Error fetching blockchain data", err);
         debugLog("Error fetching blockchain data");
-        updateSyncStatus("Error checking blockchain data");
+        // Don't display block sync dialog in terminal anymore
+        // updateSyncStatus("Error checking blockchain data");
     }
 }
 
@@ -2174,6 +2178,13 @@ function start() {
     isTaskInProgress = false;
     animationTimer = setInterval(animate, ANIMATION_SPEED);
     updateConnectionStatus(false);
+
+    // Fetch block height immediately on start
+    fetchAndUpdateBlockHeight();
+
+    // Set up interval to update block height every 10 seconds
+    setInterval(fetchAndUpdateBlockHeight, 10000);
+
     debugLog("Simulation started");
 }
 
@@ -2377,7 +2388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate on change
         endBlockInput.addEventListener('change', () => {
             const value = parseInt(endBlockInput.value);
-            
+
             if (isNaN(value) || value < 200) {
                 endBlockInput.value = 200; // Reset to minimum valid value
                 updateSyncStatus("End Block must be ≥ 200");
@@ -2388,7 +2399,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
             }
         });
-        
+
         // Also validate on input to immediately correct invalid entries
         endBlockInput.addEventListener('input', () => {
             const value = endBlockInput.value;
@@ -2638,41 +2649,41 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
         debugLog("Combined analysis cancelled - disconnected");
         return;
     }
-    
+
     debugLog("Starting combined analysis");
     updateSyncStatus("All analysts are putting together their analysis...");
-    
+
     // Set a flag to indicate analysis is in progress
     analysisInProgress = true;
-    
+
     // Calculate the chunk range for combined analysis based on endBlock
     const startBlock = Math.max(0, endBlock - 200);
     const endBlockValue = endBlock - 1; // API uses inclusive end values
-    
+
     // Have all analysts speak the same message and prepare for collaboration
     for (const person of people) {
         person.startCollaborativeAnalysis();
     }
-    
+
     // Update terminal to show combined analysis is starting
     const terminalContent = document.getElementById('terminalContent');
     if (terminalContent) {
         terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>
 <div class="terminal-instructions">All analysts are collaborating on the final ${symbol} analysis...</div>
 <div style="color: #0f0">[${new Date().toLocaleTimeString()}] Gathering comprehensive insights across all analysis dimensions (blocks ${startBlock}-${endBlockValue})...</div>`;
-        
+
         if (window.combinedAnalysisResults) {
             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
         }
     }
-    
+
     // Make the two API calls in parallel with the new block range
     const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
     const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
-    
+
     // Show progress in terminal
     updateSyncStatus(`Fetching comprehensive observation data for blocks ${startBlock}-${endBlockValue}...`);
-    
+
     // First fetch the observation data
     fetchDataFromApi(observationUrl, symbol, startBlock, endBlockValue)
         .then(observationResult => {
@@ -2681,9 +2692,9 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
                 debugLog("Combined analysis observation fetch completed but disconnected - aborting");
                 return { observation: null, consideration: null };
             }
-            
+
             updateSyncStatus(`Fetching strategic consideration data for blocks ${startBlock}-${endBlockValue}...`);
-            
+
             // Then fetch the consideration data
             return fetchDataFromApi(considerationUrl, symbol, startBlock, endBlockValue)
                 .then(considerationResult => {
@@ -2692,7 +2703,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
                         debugLog("Combined analysis consideration fetch completed but disconnected - aborting");
                         return { observation: null, consideration: null };
                     }
-                    
+
                     return { observation: observationResult, consideration: considerationResult };
                 });
         })
@@ -2702,19 +2713,19 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
                 debugLog("Combined analysis processing cancelled - disconnected");
                 return;
             }
-            
+
             // Skip further processing if results are null (user disconnected)
             if (!results.observation && !results.consideration) {
                 return;
             }
-            
+
             // Format and display the combined results
             debugLog("Combined analysis complete");
             updateSyncStatus("Combined analysis completed successfully!");
-            
+
             // Format the results nicely
             let formattedResults = `<strong>=== COMPREHENSIVE ${symbol} ANALYSIS (Blocks ${startBlock}-${endBlockValue}) ===</strong>\n\n`;
-            
+
             if (results.observation) {
                 try {
                     // Always try to format the observation data
@@ -2727,7 +2738,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             } else {
                 formattedResults += `<strong>Market Observations:</strong> No data available\n\n`;
             }
-            
+
             if (results.consideration) {
                 try {
                     // Always try to format the consideration data
@@ -2740,24 +2751,24 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             } else {
                 formattedResults += `<strong>Strategic Considerations:</strong> No data available`;
             }
-            
+
             // Store the formatted results in the global variable
             combinedAnalysisResults = `<strong>=== FINAL COLLABORATIVE ANALYSIS ===</strong>\n\n`;
             combinedAnalysisResults += `<span style="color: #0f0">[${new Date().toLocaleTimeString()}] Analysis integration complete!</span>\n\n`;
             combinedAnalysisResults += formattedResults;
-            
+
             // Set the flag to indicate analysis is complete
             analysisCompleted = true;
             analysisInProgress = false;
-            
+
             // Add to the terminal
             if (terminalContent) {
                 terminalContent.innerHTML = combinedAnalysisResults;
             }
-            
+
             // Add to terminal history
             addToTerminalHistory(`All analysts completed comprehensive ${symbol} analysis for blocks ${startBlock}-${endBlockValue}`);
-            
+
             // Have all analysts celebrate success
             for (const person of people) {
                 person.isFetching = false;
@@ -2768,7 +2779,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
                     person.speak("📈 💯 ⭐");
                 }
             }
-            
+
             // Reset task status
             isTaskInProgress = false;
             scheduleNextTask();
@@ -2779,20 +2790,36 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
                 debugLog("Combined analysis error handling cancelled - disconnected");
                 return;
             }
-            
+
             console.error("Error during combined analysis:", error);
             updateSyncStatus("Error during combined analysis: " + error.message);
-            
+
             // Handle error - reset analyst states
             for (const person of people) {
                 person.isFetching = false;
                 person.state = 'idle';
                 person.speak("❌ 📊 ❓");
             }
-            
+
             // Reset task status
             isTaskInProgress = false;
             analysisInProgress = false;
             scheduleNextTask();
+        });
+}
+
+// Add this function after the drawWindowClouds function
+function fetchAndUpdateBlockHeight() {
+    fetch(CHAIN_LENGTH_API)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.chain_length) {
+                chainLength = data.chain_length;
+                const chainInfoElement = document.getElementById('chain-info');
+                chainInfoElement.innerHTML = `Block Height: <a href="https://sentichain.com/app?tab=BlockExplorer&block=last#" target="_blank" style="color: #00FFC8;">${chainLength}<span>↗</span></a> (Powered by SentiChain)`;
+            }
+        })
+        .catch(err => {
+            console.error("Error fetching blockchain data", err);
         });
 }
