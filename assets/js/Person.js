@@ -16,6 +16,11 @@ class Person {
         this.facingDirection = 'up';
         this.state = 'idle';
         this.stateTime = 0;
+        
+        // Add path-related properties
+        this.path = [];
+        this.pathIndex = 0;
+        this.facingTableCenter = false; // Track if facing table center for debates
 
         // Body dimensions for rendering
         this.bodyWidth = GRID_SIZE * 0.98;
@@ -25,6 +30,58 @@ class Person {
         this.armHeight = GRID_SIZE * 0.56;
         this.legWidth = GRID_SIZE * 0.35;
         this.legHeight = GRID_SIZE * 0.42;
+    }
+
+    // Add setDestination method to make the person walk to a specific location
+    setDestination(destX, destY) {
+        if (this.x === destX && this.y === destY) {
+            return true; // Already at destination
+        }
+        
+        // Find path to destination
+        this.path = findPath(this.x, this.y, destX, destY);
+        this.pathIndex = 0;
+        
+        if (this.path.length > 0) {
+            this.state = 'walking';
+            debugLog(`${this.name} walking to (${destX}, ${destY}), path length: ${this.path.length}`);
+            return true; // Successfully found a path
+        } else {
+            debugLog(`${this.name} couldn't find path to (${destX}, ${destY})`);
+            return false; // Failed to find a path
+        }
+    }
+
+    // Add wander method for random movement
+    wander() {
+        // Only wander if not busy with something else
+        if (this.isFetching || this.state === 'working' || this.state === 'walking') {
+            return;
+        }
+        
+        // Select a random destination within reasonable bounds
+        const wanderRadius = 5; // How far to wander from current position
+        
+        // Try up to 5 times to find a valid destination
+        for (let i = 0; i < 5; i++) {
+            const randX = Math.max(1, Math.min(COLS - 2, 
+                this.x + Math.floor(Math.random() * wanderRadius * 2) - wanderRadius));
+            const randY = Math.max(1, Math.min(ROWS - 2, 
+                this.y + Math.floor(Math.random() * wanderRadius * 2) - wanderRadius));
+            
+            // Check if the destination is walkable
+            if (isWalkable(randX, randY)) {
+                this.setDestination(randX, randY);
+                break;
+            }
+        }
+    }
+
+    // Add goToDesk method
+    goToDesk() {
+        this.setDestination(this.desk.x, this.desk.y);
+        this.state = 'walking';
+        this.speak("💻 📊 !");
     }
 
     speak(message) {
@@ -594,6 +651,37 @@ class Person {
             return;
         }
 
+        // Handle walking state - move along path
+        if (this.state === 'walking' && this.path.length > 0 && this.pathIndex < this.path.length) {
+            const nextPos = this.path[this.pathIndex];
+            
+            // Update facing direction based on movement
+            if (nextPos.x > this.x) {
+                this.facingDirection = 'right';
+            } else if (nextPos.x < this.x) {
+                this.facingDirection = 'left';
+            } else if (nextPos.y > this.y) {
+                this.facingDirection = 'down';
+            } else if (nextPos.y < this.y) {
+                this.facingDirection = 'up';
+            }
+            
+            // Move to next position
+            this.x = nextPos.x;
+            this.y = nextPos.y;
+            this.pathIndex++;
+            
+            // Check if we've reached the end of the path
+            if (this.pathIndex >= this.path.length) {
+                this.path = [];
+                this.pathIndex = 0;
+                this.state = 'idle';
+                this.stateTime = 0;
+            }
+            
+            return;
+        }
+
         switch (this.state) {
             case 'idle':
                 this.stateTime++;
@@ -651,7 +739,14 @@ class Person {
         debugLog(`${this.name} joining collaborative analysis`);
         this.isFetching = true;
         this.speak("Let's put together our analysis!");
-        this.facingDirection = 'down'; // Face toward center
+        
+        // Get position near the center of the office (bar table)
+        const tableCenterX = Math.floor(COLS / 2);
+        const tableCenterY = Math.floor(ROWS / 2);
+        
+        // Don't set a specific path here - the updated performCombinedAnalysis
+        // will handle setting paths for all analysts to ensure they're properly positioned
+        
         this.state = 'working';
         // Don't update sync status here, as the main function handles this
     }
