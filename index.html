@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fundis.AI</title>
+  <meta name="description"
+    content="Fundis.AI combines frontier AI innovations, quantitative methods and fundamentals research to turn market data into actionable insights, with a vision of transitioning to AI Agents to perform human-like investment research." />
+  <meta name="keywords"
+    content="Fundis.AI, sentiment analysis, quantitative methods, fundamentals research, market insights" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="Fundis.AI: Innovating Market Intelligence" />
+  <meta property="og:description"
+    content="Fundis.AI combines frontier AI innovations, quantitative methods and fundamentals research to turn market data into actionable insights." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+
+<body>
+  <div id="main-container">
+    <!-- Mobile tab navigation -->
+    <div id="mobile-tabs">
+      <button class="tab-button active" data-tab="terminal">Terminal</button>
+      <button class="tab-button" data-tab="office">Office</button>
+    </div>
+
+    <div id="left-panel">
+      <canvas id="officeCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <div id="right-panel">
+      <div id="terminalBox">
+
+        <div id="terminalTopBar">
+          <span id="chain-info">Block Height: Loading...</span>
+          <span id="api-status-dot" class="disconnected-dot"></span>
+        </div>
+
+        <div id="terminalContent">
+          <div id="branding">Welcome to Fundis.AI</div>
+          <div class="terminal-form">
+            <div class="form-group">
+              <label for="apiKey">Please input your API Key (<a href="https://sentichain.com/app?tab=APIManagement" target="_blank" style="color: #00FFC8;">Register↗</a>):</label>
+              <input type="text" id="apiKey" class="terminal-input" placeholder="Paste or type your API key here">
+            </div>
+            <div class="form-group">
+              <label for="symbolSelect">Please select a Symbol:</label>
+              <select id="symbolSelect" class="terminal-select">
+                <option value="BTC" selected>BTC</option>
+                <option value="ETH">ETH</option>
+                <option value="SOL">SOL</option>
+                <option value="XRP">XRP</option>
+                <option value="ADA">ADA</option>
+                <option value="AVAX">AVAX</option>
+                <option value="DOGE">DOGE</option>
+                <option value="TRX">TRX</option>
+                <option value="LINK">LINK</option>
+                <option value="DOT">DOT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="endBlock">Please input ending Block:</label>
+              <input type="number" id="endBlock" class="terminal-input" placeholder="Enter a number ≥ 200 (multiple of 50)" min="200" step="50" value="200">
+            </div>
+          </div>
+        </div>
+
+        <div id="terminalBottomBar">
+          <span id="fetch-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="global-footer">Fundis.AI © All Rights Reserved 2025</div>
+
+  <script src="assets/js/Person.js"></script>
+  <script src="assets/js/Dog.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+
+</html>
