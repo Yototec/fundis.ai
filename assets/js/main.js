@@ -679,7 +679,7 @@ function formatAnalystData(data) {
 
                 const jsonMatch = block.match(/\[\s*\{[\s\S]*?\}\s*\]/);
                 if (jsonMatch) {
-                    const tableHtml = formatAsHtmlTable(jsonMatch[0]); 
+                    const tableHtml = formatAsHtmlTable(jsonMatch[0]);
                     formattedData += tableHtml;
                 } else {
                     formattedData += `<pre>${escapeHtml(block)}</pre>`;
@@ -2066,7 +2066,11 @@ function formatAsHtmlTable(data) {
 
     // Build HTML table header + body
     let html = `
-      <table class="analyst-table">
+      <table class="analyst-table" style="table-layout: fixed; width: 100%;">
+       <colgroup>
+          <col style="width: 30%;">
+          <col style="width: 70%;">
+        </colgroup>
         <thead>
           <tr>
             <th>Timestamp</th>
