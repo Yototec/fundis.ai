@@ -1751,13 +1751,23 @@ Person.prototype.update = function () {
 // Add optional dog finding to idle behavior
 const originalIdle = people[0].constructor.prototype.wander;
 Person.prototype.wander = function () {
-    // 20% chance to try to find the dog instead of random wandering
-    if (Math.random() < 0.2) {
-        this.setDestination(dog.x, dog.y);
-        this.speak("🐶");
-    } else {
-        originalIdle.call(this);
+    // Only try to find the dog if we're not busy
+    if (this.isFetching || this.state === 'working' || this.state === 'walking') {
+        return false;
     }
+    
+    // 20% chance to try to find the dog instead of random wandering
+    if (Math.random() < 0.2 && dog) {
+        const result = this.setDestination(dog.x, dog.y);
+        if (result) {
+            this.speak("🐶");
+            return true;
+        }
+    }
+    
+    // Call the original wander method if we're not finding the dog
+    // or if setting destination to dog failed
+    return originalIdle.call(this);
 };
 
 const originalFindInteraction = Person.prototype.findInteraction;
@@ -1784,20 +1794,9 @@ if (originalFindInteraction) {
 
 // Override any methods that would use English phrases
 if (Person.prototype.wander) {
-    const originalBaseWander = Person.prototype.wander;
-    Person.prototype.wander = function () {
-        // Just speak a random emoji message 
-        if (Math.random() < 0.3) {
-            const wanderEmojis = [
-                "💹 📊 🔍",
-                "📈 🧮 ⚡",
-                "💻 ⚙️ 👀",
-                "🔢 💯 !",
-                "@# 💼 ?"
-            ];
-            this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
-        }
-    };
+    // Remove the emoji-only override since we now handle speaking in the wander method itself
+    // This line is left for historical reference but the override is removed
+    // Person.prototype.wander was already properly updated above
 }
 
 // Override other methods that might use speech
@@ -2183,6 +2182,42 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
 
                     // Reset task status
                     isTaskInProgress = false;
+                    
+                    // Set up a continuous wandering behavior for all analysts
+                    const wanderTimer = setInterval(() => {
+                        // Skip if disconnected
+                        if (!apiConnected) {
+                            clearInterval(wanderTimer);
+                            return;
+                        }
+                        
+                        // Randomly select an analyst to move
+                        const randomAnalyst = people[Math.floor(Math.random() * people.length)];
+                        
+                        // Only have them wander if they're not already doing something
+                        if (randomAnalyst.state === 'idle' && !randomAnalyst.isFetching) {
+                            randomAnalyst.wander();
+                            
+                            // Small chance to speak while wandering
+                            if (Math.random() < 0.3) {
+                                const wanderEmojis = [
+                                    "🔍 📊 💡",
+                                    "📱 📈 👀",
+                                    "💻 🌐 📊",
+                                    "🧠 💹 ⚡",
+                                    "📉 📈 ⭐"
+                                ];
+                                randomAnalyst.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
+                            }
+                        }
+                    }, 5000); // Try to move a random analyst every 5 seconds
+                    
+                    // Add to tracked timers
+                    activeTimers.push(wanderTimer);
+                    
+                    // Schedule interesting place visits
+                    scheduleInterestingPlaceVisits();
+                    
                     scheduleNextTask();
                 }, 3000); // Wait 3 seconds before wandering
             })
@@ -2449,4 +2484,80 @@ function findBarTablePositions(tableCenterX, tableCenterY) {
     }
     
     return positions;
+}
+
+// Add function to have analysts occasionally visit interesting places
+function scheduleInterestingPlaceVisits() {
+    if (!apiConnected || !analysisCompleted) return;
+    
+    // Find interesting places in the office
+    const interestingPlaces = [
+        // Coffee area
+        { 
+            x: Math.floor(COLS / 2) + 3, 
+            y: Math.floor(ROWS / 2) - 1,
+            type: 'coffee'
+        },
+        // Windows
+        { 
+            x: 3, 
+            y: 0,
+            type: 'window'
+        },
+        { 
+            x: COLS - 1, 
+            y: 3,
+            type: 'window'
+        },
+        // Center of the office (meeting point)
+        { 
+            x: Math.floor(COLS / 2), 
+            y: Math.floor(ROWS / 2) + 3,
+            type: 'meeting'
+        }
+    ];
+    
+    // Every 15-30 seconds, have a random analyst visit an interesting place
+    const placeVisitTimer = setInterval(() => {
+        // Skip if disconnected
+        if (!apiConnected || !analysisCompleted) {
+            clearInterval(placeVisitTimer);
+            return;
+        }
+        
+        // Pick a random analyst who isn't busy
+        const availableAnalysts = people.filter(p => 
+            p.state !== 'walking' && !p.isFetching);
+        
+        if (availableAnalysts.length === 0) return;
+        
+        const randomAnalyst = availableAnalysts[Math.floor(Math.random() * availableAnalysts.length)];
+        
+        // Pick a random interesting place
+        const randomPlace = interestingPlaces[Math.floor(Math.random() * interestingPlaces.length)];
+        
+        // Find a walkable position near the interesting place
+        const nearbyPosition = findNearestWalkablePosition(randomPlace.x, randomPlace.y, 3);
+        
+        // Try to set destination
+        if (randomAnalyst.setDestination(nearbyPosition.x, nearbyPosition.y)) {
+            // Choose message based on place type
+            switch (randomPlace.type) {
+                case 'coffee':
+                    randomAnalyst.speak("☕ 🔋 💯");
+                    break;
+                case 'window':
+                    randomAnalyst.speak("🪟 👀 💭");
+                    break;
+                case 'meeting':
+                    randomAnalyst.speak("🤝 💬 📊");
+                    break;
+                default:
+                    randomAnalyst.speak("🚶 🔍 ✨");
+            }
+        }
+    }, 15000 + Math.random() * 15000); // Random interval between 15-30 seconds
+    
+    // Add to tracked timers
+    activeTimers.push(placeVisitTimer);
 }

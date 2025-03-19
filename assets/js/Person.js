@@ -56,11 +56,16 @@ class Person {
     wander() {
         // Only wander if not busy with something else
         if (this.isFetching || this.state === 'working' || this.state === 'walking') {
-            return;
+            return false;
+        }
+        
+        // Check if recently moved to avoid too frequent movements
+        if (this.stateTime < 5) {
+            return false;
         }
         
         // Select a random destination within reasonable bounds
-        const wanderRadius = 5; // How far to wander from current position
+        const wanderRadius = 6; // Slightly larger radius to promote more movement
         
         // Try up to 5 times to find a valid destination
         for (let i = 0; i < 5; i++) {
@@ -69,12 +74,33 @@ class Person {
             const randY = Math.max(1, Math.min(ROWS - 2, 
                 this.y + Math.floor(Math.random() * wanderRadius * 2) - wanderRadius));
             
+            // Check if the destination is different from current position
+            if (randX === this.x && randY === this.y) {
+                continue;
+            }
+            
             // Check if the destination is walkable
             if (isWalkable(randX, randY)) {
                 this.setDestination(randX, randY);
-                break;
+                
+                // Small chance to speak emoji when wandering
+                if (Math.random() < 0.3) {
+                    const wanderEmojis = [
+                        "💹 📊 🔍",
+                        "📈 🧮 ⚡",
+                        "💻 ⚙️ 👀",
+                        "🔢 💯 !",
+                        "🧠 💡 ✨"
+                    ];
+                    this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
+                }
+                
+                return true;
             }
         }
+        
+        // Couldn't find a valid destination
+        return false;
     }
 
     // Add goToDesk method
@@ -689,7 +715,11 @@ class Person {
                     this.stateTime = 0;
                     const rand = Math.random();
 
-                    if (rand < 0.4) {
+                    // Increase chance of wandering if analysis is completed
+                    if (rand < 0.5 && analysisCompleted) {
+                        // Wander to a new location
+                        this.wander();
+                    } else if (rand < 0.4) {
                         // Start working
                         this.state = 'working';
                         this.stateTime = 0;
@@ -720,6 +750,11 @@ class Person {
                 if (this.stateTime > 15) {
                     this.state = 'idle';
                     this.stateTime = 0;
+                    
+                    // Chance to wander after working if analysis is completed
+                    if (Math.random() < 0.7 && analysisCompleted) {
+                        this.wander();
+                    }
                 }
                 break;
         }
