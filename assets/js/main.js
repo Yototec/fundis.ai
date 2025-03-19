@@ -1336,7 +1336,7 @@ function updateTerminalDisplay() {
 <div class="form-group">
 <label for="endBlock">Please input ending Block:</label>
 <input type="number" id="endBlock" class="terminal-input" value="${endBlock}" placeholder="Enter a number ≥ 200 (multiple of 50)" min="200" step="50">
-<div id="block-timestamp"></div>
+<div id="block-timestamp" style="font-size: 12px; margin-top: 5px; color: #00FFC8;"></div>
 </div>
 </div>`.trim();
 
@@ -2711,6 +2711,9 @@ function fetchAndDisplayBlockTimestamp(blockNumber) {
         if (endBlockInput && endBlockInput.parentNode) {
             endBlockInput.parentNode.appendChild(timestampDisplay);
         }
+    } else {
+        // Ensure color is set consistently (even if element already exists)
+        timestampDisplay.style.color = '#00FFC8';
     }
 
     // Show loading state
@@ -2725,14 +2728,17 @@ function fetchAndDisplayBlockTimestamp(blockNumber) {
                 const utcDate = new Date(data.timestamp);
                 const localDateString = utcDate.toLocaleString();
                 
-                // Update the display
+                // Update the display with consistent styling
+                timestampDisplay.style.color = '#00FFC8'; // Ensure color is set
                 timestampDisplay.innerHTML = `Block ${blockNumber} timestamp: <span style="color: white">${localDateString}</span> (local time)`;
             } else {
+                timestampDisplay.style.color = '#00FFC8'; // Ensure color is set
                 timestampDisplay.textContent = `Could not retrieve timestamp for block ${blockNumber}`;
             }
         })
         .catch(error => {
             console.error("Error fetching block timestamp:", error);
+            timestampDisplay.style.color = '#00FFC8'; // Ensure color is set
             timestampDisplay.textContent = `Error fetching timestamp for block ${blockNumber}`;
         });
 }
