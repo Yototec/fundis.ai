@@ -1415,7 +1415,6 @@ function setupMobileScrolling() {
         if (isMobileView) {
             isDragging = true;
             startDragX = e.touches[0].clientX;
-            e.preventDefault();
         }
     }, { passive: false });
 
@@ -1423,26 +1422,14 @@ function setupMobileScrolling() {
         if (isMobileView && isDragging) {
             const currentX = e.touches[0].clientX;
             const deltaX = currentX - startDragX;
-
             canvasOffset.x += deltaX;
-
-            // Get actual canvas dimensions
             const canvasRect = canvas.getBoundingClientRect();
-
-            // Asymmetric scrolling - more to the right, less to the left
             const leftPadding = canvasRect.width * -0.35;  // Less padding on left
             const rightPadding = canvasRect.width * 0.25;  // More padding on right
             const maxScroll = Math.max(0, canvas.width - canvasRect.width + rightPadding);
-
-            // Allow scrolling with asymmetric limits
             canvasOffset.x = Math.min(rightPadding, Math.max(-maxScroll + leftPadding, canvasOffset.x));
-
             startDragX = currentX;
-
-            // Force an immediate redraw
             requestAnimationFrame(draw);
-
-            e.preventDefault();
         }
     }, { passive: false });
 
@@ -2045,17 +2032,6 @@ function fetchAndUpdateBlockHeight() {
 
 // Add a function to handle terminal form submission
 function handleFormSubmission() {
-    // If we're on mobile, we need to reset the view
-    if (isMobileView) {
-        // Blur any active element to dismiss keyboard
-        if (document.activeElement) {
-            document.activeElement.blur();
-        }
-
-        // Remove keyboard-open class
-        document.body.classList.remove('keyboard-open');
-    }
-
     // Connect to API if not already connected
     if (!apiConnected) {
         const apiKey = document.getElementById('apiKey').value;
