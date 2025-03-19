@@ -2049,12 +2049,6 @@ window.addEventListener('resize', () => {
     isMobileView = newIsMobileView;
 });
 
-// Fix for iOS keyboard issues - detect keyboard closing
-document.addEventListener('focusout', (e) => {
-    // Only run on mobile
-    if (!isMobileView) return;
-});
-
 // Add a function to handle terminal form submission
 function handleFormSubmission() {
     // If we're on mobile, we need to reset the view

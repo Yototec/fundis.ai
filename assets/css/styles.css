@@ -434,38 +434,6 @@ body {
         margin-bottom: calc(20px + env(safe-area-inset-bottom));
     }
 
-    /* Add styles for keyboard interaction */
-    body.keyboard-open {
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    }
-
-    body.keyboard-open #terminalBox {
-        /* Ensure terminal stays in view */
-        position: relative;
-        z-index: 1100;
-    }
-
-    body.keyboard-open #terminalContent {
-        max-height: 30vh;
-        overflow-y: auto;
-    }
-
-    body.keyboard-open #api-status-dot {
-        /* Make sure the status dot stays visible and interactive */
-        position: sticky;
-        top: 10px;
-        z-index: 1200;
-    }
-
-    body.keyboard-open #mobile-tabs {
-        /* Keep tabs visible when keyboard is open */
-        position: sticky;
-        top: 0;
-        z-index: 1200;
-    }
-
     /* Add extra padding for iOS bottom bar in terminal view */
     #terminalContent {
         padding-bottom: env(safe-area-inset-bottom);
