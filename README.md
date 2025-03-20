@@ -1,3 +1,3 @@
-# Fundis.AI
+# Fundis.ai
 
-Fundamentals Insights from AI Agents, powered by SentiChain.
+Fundis leverages autonomous AI agents to deliver deep and decentralized insights into market fundamentals.
