@@ -1345,9 +1345,71 @@ function updateTerminalDisplay() {
         if (!isNaN(currentBlockNumber) && currentBlockNumber >= 200) {
             fetchAndDisplayBlockTimestamp(currentBlockNumber);
         }
+        
+        // Reattach event listeners to the form inputs after rebuilding
+        attachFormEventListeners();
     } else {
         // Show terminal history when connected
         terminalContent.innerHTML = `<div id="branding">Welcome to Fundis.AI</div>\n=== Terminal History ===\n\n${terminalHistory.join('\n')}\n`;
+    }
+}
+
+// New function to attach event listeners to form inputs
+function attachFormEventListeners() {
+    // Handle endBlock input
+    const endBlockInput = document.getElementById('endBlock');
+    if (endBlockInput) {
+        // Handle change event
+        endBlockInput.addEventListener('change', function() {
+            const value = parseInt(this.value);
+
+            if (isNaN(value) || value < 200) {
+                this.value = 200; // Reset to minimum valid value
+                updateSyncStatus("End Block must be ≥ 200");
+                fetchAndDisplayBlockTimestamp(200);
+            } else if (value % 50 !== 0) {
+                // Round to nearest multiple of 50
+                const roundedValue = Math.round(value / 50) * 50;
+                this.value = roundedValue;
+                updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
+                fetchAndDisplayBlockTimestamp(roundedValue);
+            } else {
+                fetchAndDisplayBlockTimestamp(value);
+            }
+        });
+
+        // Handle blur event to update timestamp when input loses focus
+        endBlockInput.addEventListener('blur', function() {
+            const value = parseInt(this.value);
+            if (!isNaN(value) && value >= 200) {
+                fetchAndDisplayBlockTimestamp(value);
+            }
+        });
+
+        // Also handle input event for validation
+        endBlockInput.addEventListener('input', function() {
+            const value = this.value;
+            // Allow empty input while typing
+            if (value && (isNaN(parseInt(value)) || parseInt(value) < 200)) {
+                updateSyncStatus("End Block must be ≥ 200");
+            }
+        });
+    }
+
+    // Handle apiKey input
+    const apiKeyInput = document.getElementById('apiKey');
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter' && !apiConnected) {
+                const apiKey = this.value;
+                if (apiKey) {
+                    updateConnectionStatus('connecting');
+                    connectToApi();
+                } else {
+                    updateSyncStatus("Error: API Key is required");
+                }
+            }
+        });
     }
 }
 
@@ -2109,41 +2171,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Add event listeners for the endBlock input to fetch timestamp
-    const endBlockInput = document.getElementById('endBlock');
-    if (endBlockInput) {
-        // Validate on change and fetch timestamp when value is valid
-        endBlockInput.addEventListener('change', () => {
-            const value = parseInt(endBlockInput.value);
+    // Attach event listeners to the form inputs
+    attachFormEventListeners();
 
-            if (isNaN(value) || value < 200) {
-                endBlockInput.value = 200; // Reset to minimum valid value
-                updateSyncStatus("End Block must be ≥ 200");
-                fetchAndDisplayBlockTimestamp(200);
-            } else if (value % 50 !== 0) {
-                // Round to nearest multiple of 50
-                const roundedValue = Math.round(value / 50) * 50;
-                endBlockInput.value = roundedValue;
-                updateSyncStatus(`End Block rounded to ${roundedValue} (must be a multiple of 50)`);
-                fetchAndDisplayBlockTimestamp(roundedValue);
-            } else {
-                fetchAndDisplayBlockTimestamp(value);
-            }
+    // Add touchstart event listener to the API status dot 
+    // to ensure it works after keyboard is closed
+    const apiStatusDot = document.getElementById('api-status-dot');
+    if (apiStatusDot) {
+        // Use touchstart for more reliable mobile interaction
+        apiStatusDot.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default to avoid double firing
+            handleApiStatusDotClick();
         });
-
-        // Also fetch timestamp when input loses focus
-        endBlockInput.addEventListener('blur', () => {
-            const value = parseInt(endBlockInput.value);
-            if (!isNaN(value) && value >= 200) {
-                fetchAndDisplayBlockTimestamp(value);
-            }
-        });
-
-        // Fetch timestamp for initial value if present
-        const initialValue = parseInt(endBlockInput.value);
-        if (!isNaN(initialValue) && initialValue >= 200) {
-            fetchAndDisplayBlockTimestamp(initialValue);
-        }
     }
 });
 
