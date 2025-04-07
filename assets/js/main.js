@@ -764,7 +764,7 @@ function startSequentialAnalysis(analyst, symbol, apiKey, summaryType, analysisT
             // Reset the analyst state
             analyst.isFetching = false;
             analyst.state = 'idle';
-            
+
             // After analysis is complete, make the analyst move to the bar table
             // This is the key change - each analyst independently moves to the table after finishing
             moveAnalystToBarTable(analyst, symbol, apiKey, startBlock, endBlock - 1);
@@ -930,7 +930,7 @@ function disconnectFromApi() {
         // Reset table tracking variables
         analystsAtBarTable = [];
         combinedAnalysisStarted = false;
-        
+
         // Mark disconnection in progress
         apiConnected = false;
         updateConnectionStatus(false);
@@ -1022,7 +1022,7 @@ async function fetchChainData() {
         if (data && data.chain_length) {
             chainLength = data.chain_length;
             const chainInfoElement = document.getElementById('chain-info');
-            chainInfoElement.innerHTML = `Block Height: <a href="https://sentichain.com/app?tab=BlockExplorer&block=last#" target="_blank">${chainLength}</a> (SentiChain ${data.network})`;
+            chainInfoElement.innerHTML = `Block Height: <a href="https://sentichain.com/app?tab=BlockExplorer&block=last#" target="_blank" style="color: #00FFC8;">${chainLength}<span>↗</span></a> (Powered by SentiChain ${data.network})`;
             if (chainLength > lastFetchTime) {
                 // Don't display block sync dialog in terminal anymore
                 // updateSyncStatus("Blockchain data sync complete.");
@@ -1345,7 +1345,7 @@ function updateTerminalDisplay() {
         if (!isNaN(currentBlockNumber) && currentBlockNumber >= 200) {
             fetchAndDisplayBlockTimestamp(currentBlockNumber);
         }
-        
+
         // Reattach event listeners to the form inputs after rebuilding
         attachFormEventListeners();
     } else {
@@ -1360,7 +1360,7 @@ function attachFormEventListeners() {
     const endBlockInput = document.getElementById('endBlock');
     if (endBlockInput) {
         // Handle change event
-        endBlockInput.addEventListener('change', function() {
+        endBlockInput.addEventListener('change', function () {
             const value = parseInt(this.value);
 
             if (isNaN(value) || value < 200) {
@@ -1379,7 +1379,7 @@ function attachFormEventListeners() {
         });
 
         // Handle blur event to update timestamp when input loses focus
-        endBlockInput.addEventListener('blur', function() {
+        endBlockInput.addEventListener('blur', function () {
             const value = parseInt(this.value);
             if (!isNaN(value) && value >= 200) {
                 fetchAndDisplayBlockTimestamp(value);
@@ -1387,7 +1387,7 @@ function attachFormEventListeners() {
         });
 
         // Also handle input event for validation
-        endBlockInput.addEventListener('input', function() {
+        endBlockInput.addEventListener('input', function () {
             const value = this.value;
             // Allow empty input while typing
             if (value && (isNaN(parseInt(value)) || parseInt(value) < 200)) {
@@ -1399,7 +1399,7 @@ function attachFormEventListeners() {
     // Handle apiKey input
     const apiKeyInput = document.getElementById('apiKey');
     if (apiKeyInput) {
-        apiKeyInput.addEventListener('keyup', function(event) {
+        apiKeyInput.addEventListener('keyup', function (event) {
             if (event.key === 'Enter' && !apiConnected) {
                 const apiKey = this.value;
                 if (apiKey) {
@@ -1840,7 +1840,7 @@ Person.prototype.wander = function () {
     if (this.isFetching || this.state === 'working' || this.state === 'walking') {
         return false;
     }
-    
+
     // 20% chance to try to find the dog instead of random wandering
     if (Math.random() < 0.2 && dog) {
         const result = this.setDestination(dog.x, dog.y);
@@ -1849,7 +1849,7 @@ Person.prototype.wander = function () {
             return true;
         }
     }
-    
+
     // Call the original wander method if we're not finding the dog
     // or if setting destination to dog failed
     return originalIdle.call(this);
@@ -1926,14 +1926,14 @@ if (Person.prototype.goToDesk) {
 function performCombinedAnalysis(symbol, apiKey, endBlock) {
     // Skip if we're disconnected or if analysis has already started
     if (!apiConnected || combinedAnalysisStarted) {
-        debugLog("Combined analysis cancelled - " + 
-                 (combinedAnalysisStarted ? "already in progress" : "disconnected"));
+        debugLog("Combined analysis cancelled - " +
+            (combinedAnalysisStarted ? "already in progress" : "disconnected"));
         return;
     }
-    
+
     // Mark that we're starting the combined analysis to prevent duplicate starts
     combinedAnalysisStarted = true;
-    
+
     debugLog("Starting collaborative debate and combined analysis");
     updateSyncStatus("Analysts are starting their collaborative analysis...");
 
@@ -1947,14 +1947,14 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
     // Get positions around the bar table - the table is at the center of the office
     const tableCenterX = Math.floor(COLS / 2);
     const tableCenterY = Math.floor(ROWS / 2);
-    
+
     // Make sure all analysts are facing the table center
     for (const person of people) {
         if (!person.facingTableCenter) {
             // Update facing direction to look toward the center of the table
             const dx = tableCenterX - person.x;
             const dy = tableCenterY - person.y;
-            
+
             if (Math.abs(dx) > Math.abs(dy)) {
                 person.facingDirection = dx > 0 ? 'right' : 'left';
             } else {
@@ -1976,7 +1976,7 @@ function performCombinedAnalysis(symbol, apiKey, endBlock) {
             terminalContent.innerHTML += `\n\n${window.combinedAnalysisResults}`;
         }
     }
-    
+
     // Start the collaborative debate - the analysis process is the same as before
     startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue);
 }
@@ -1987,7 +1987,7 @@ function disconnectFromApi() {
         // Reset table tracking variables
         analystsAtBarTable = [];
         combinedAnalysisStarted = false;
-        
+
         // Mark disconnection in progress
         apiConnected = false;
         updateConnectionStatus(false);
@@ -2057,31 +2057,31 @@ function moveAnalystToBarTable(analyst, symbol, apiKey, startBlock, endBlockValu
         debugLog(`${analyst.name} move to bar table skipped - ${combinedAnalysisStarted ? 'combined analysis already started' : 'disconnected'}`);
         return;
     }
-    
+
     // Get positions around the bar table
     const tableCenterX = Math.floor(COLS / 2);
     const tableCenterY = Math.floor(ROWS / 2);
-    
+
     // Add a message about moving to collaborate
     analyst.speak("Let's discuss at the table!");
-    
+
     // Find the analyst's position at the table
     // We use the index in the people array to ensure each analyst goes to their assigned position
     const analystIndex = people.findIndex(p => p.ticker === analyst.ticker);
-    
+
     // Get optimized positions around the bar table
     const tablePositions = findBarTablePositions(tableCenterX, tableCenterY);
-    
+
     // Target position for this analyst
     const targetPos = tablePositions[analystIndex];
     debugLog(`${analyst.name} moving to bar table position (${targetPos.x}, ${targetPos.y})`);
-    
+
     // Try setting destination with normal path finding
     const success = analyst.setDestination(targetPos.x, targetPos.y);
-    
+
     if (!success) {
         debugLog(`${analyst.name} failed to find path to bar table position (${targetPos.x}, ${targetPos.y})`);
-        
+
         // Try with extended path finding
         const path = findPathExtended(analyst.x, analyst.y, targetPos.x, targetPos.y);
         if (path.length > 0) {
@@ -2097,13 +2097,13 @@ function moveAnalystToBarTable(analyst, symbol, apiKey, startBlock, endBlockValu
             analyst.y = nearestPos.y;
         }
     }
-    
+
     // Add this analyst to the tracking array if not already there
     if (!analystsAtBarTable.includes(analyst.ticker)) {
         analystsAtBarTable.push(analyst.ticker);
         debugLog(`${analyst.name} added to bar table tracking. Current count: ${analystsAtBarTable.length}`);
     }
-    
+
     // Check if this was the last analyst to arrive
     if (analystsAtBarTable.length === 4 && !combinedAnalysisStarted) {
         debugLog("All 4 analysts have arrived at the bar table, starting collaborative analysis");
@@ -2134,7 +2134,7 @@ function fetchAndUpdateBlockHeight() {
                     // Only update the field if it's currently empty or has the default value
                     if (!endBlockInput.value || endBlockInput.value === "200") {
                         endBlockInput.value = endBlockValue;
-                        
+
                         // Also fetch and display the timestamp for this block
                         fetchAndDisplayBlockTimestamp(endBlockValue);
                     }
@@ -2276,29 +2276,29 @@ function findPathExtended(startX, startY, endX, endY) {
             { x: current.x - 1, y: current.y + 1 }, // Down-Left
             { x: current.x + 1, y: current.y + 1 }  // Down-Right
         ];
-        
+
         for (const n of neighbors) {
             // Skip if position is not walkable or already in closed set
             if (!isWalkable(n.x, n.y) ||
                 closedSet.some(cl => cl.x === n.x && cl.y === n.y)) {
                 continue;
             }
-            
+
             // Calculate movement cost (diagonal movement costs more)
             let moveCost = 1;
             if (n.x !== current.x && n.y !== current.y) {
                 moveCost = 1.4; // Diagonal movement
             }
-            
+
             const g = current.g + moveCost;
             const h = Math.abs(n.x - endX) + Math.abs(n.y - endY);
             const f = g + h;
-            
+
             const existing = openSet.find(o => o.x === n.x && o.y === n.y);
             if (existing && g >= existing.g) {
                 continue;
             }
-            
+
             if (existing) {
                 existing.g = g;
                 existing.f = f;
@@ -2307,7 +2307,7 @@ function findPathExtended(startX, startY, endX, endY) {
                 openSet.push({ x: n.x, y: n.y, g, h, f, parent: current });
             }
         }
-        
+
         // Allow more iterations for complex paths
         if (closedSet.length > 500) {
             debugLog("Extended path search limit reached");
@@ -2325,7 +2325,7 @@ function findBarTablePositions(tableCenterX, tableCenterY) {
         { x: tableCenterX - 1, y: tableCenterY + 2 }, // Bottom left
         { x: tableCenterX + 1, y: tableCenterY + 2 }  // Bottom right
     ];
-    
+
     // For each position, find the nearest walkable cell
     for (let i = 0; i < positions.length; i++) {
         const pos = positions[i];
@@ -2333,18 +2333,18 @@ function findBarTablePositions(tableCenterX, tableCenterY) {
             // Search in increasing radius until we find a walkable position
             for (let radius = 1; radius <= 5; radius++) {
                 let found = false;
-                
+
                 // Check positions in a square pattern around the target
                 for (let dx = -radius; dx <= radius && !found; dx++) {
                     for (let dy = -radius; dy <= radius && !found; dy++) {
                         const newX = pos.x + dx;
                         const newY = pos.y + dy;
-                        
+
                         // Skip if position is out of bounds
                         if (newX < 0 || newY < 0 || newX >= COLS || newY >= ROWS) {
                             continue;
                         }
-                        
+
                         if (isWalkable(newX, newY)) {
                             positions[i] = { x: newX, y: newY };
                             found = true;
@@ -2353,52 +2353,52 @@ function findBarTablePositions(tableCenterX, tableCenterY) {
                         }
                     }
                 }
-                
+
                 if (found) {
                     break;
                 }
-                
+
                 if (radius === 5) {
                     debugLog(`Could not find a walkable position for position ${i}`);
                 }
             }
         }
     }
-    
+
     return positions;
 }
 
 // Add function to have analysts occasionally visit interesting places
 function scheduleInterestingPlaceVisits() {
     if (!apiConnected || !analysisCompleted) return;
-    
+
     // Find interesting places in the office
     const interestingPlaces = [
         // Coffee area
-        { 
-            x: Math.floor(COLS / 2) + 3, 
+        {
+            x: Math.floor(COLS / 2) + 3,
             y: Math.floor(ROWS / 2) - 1,
             type: 'coffee'
         },
         // Windows
-        { 
-            x: 3, 
+        {
+            x: 3,
             y: 0,
             type: 'window'
         },
-        { 
-            x: COLS - 1, 
+        {
+            x: COLS - 1,
             y: 3,
             type: 'window'
         },
         // Center of the office (meeting point)
-        { 
-            x: Math.floor(COLS / 2), 
+        {
+            x: Math.floor(COLS / 2),
             y: Math.floor(ROWS / 2) + 3,
             type: 'meeting'
         }
     ];
-    
+
     // Every 15-30 seconds, have a random analyst visit an interesting place
     const placeVisitTimer = setInterval(() => {
         // Skip if disconnected
@@ -2406,21 +2406,21 @@ function scheduleInterestingPlaceVisits() {
             clearInterval(placeVisitTimer);
             return;
         }
-        
+
         // Pick a random analyst who isn't busy
-        const availableAnalysts = people.filter(p => 
+        const availableAnalysts = people.filter(p =>
             p.state !== 'walking' && !p.isFetching);
-        
+
         if (availableAnalysts.length === 0) return;
-        
+
         const randomAnalyst = availableAnalysts[Math.floor(Math.random() * availableAnalysts.length)];
-        
+
         // Pick a random interesting place
         const randomPlace = interestingPlaces[Math.floor(Math.random() * interestingPlaces.length)];
-        
+
         // Find a walkable position near the interesting place
         const nearbyPosition = findNearestWalkablePosition(randomPlace.x, randomPlace.y, 3);
-        
+
         // Try to set destination
         if (randomAnalyst.setDestination(nearbyPosition.x, nearbyPosition.y)) {
             // Choose message based on place type
@@ -2439,7 +2439,7 @@ function scheduleInterestingPlaceVisits() {
             }
         }
     }, 15000 + Math.random() * 15000); // Random interval between 15-30 seconds
-    
+
     // Add to tracked timers
     activeTimers.push(placeVisitTimer);
 }
@@ -2448,7 +2448,7 @@ function scheduleInterestingPlaceVisits() {
 function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
     debugLog("Starting collaborative debate");
     updateSyncStatus("Analysts are debating insights and findings...");
-    
+
     // Start the debate animation - analysts exchanging symbols
     let debateCounter = 0;
     const debateInterval = setInterval(() => {
@@ -2457,13 +2457,13 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
             clearInterval(debateInterval);
             return;
         }
-        
+
         debateCounter++;
-        
+
         // Rotate who's speaking
         const speakerIndex = debateCounter % people.length;
         const speaker = people[speakerIndex];
-        
+
         // Create debate symbols
         const debateSymbols = [
             "📊 📈 ⁉️",
@@ -2474,10 +2474,10 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
             "🤔 💼 📱",
             "📑 🧠 💭"
         ];
-        
+
         // Have the current speaker say something
         speaker.speak(debateSymbols[Math.floor(Math.random() * debateSymbols.length)]);
-        
+
         // Update terminal to show debate is happening
         const terminalContent = document.getElementById('terminalContent');
         if (terminalContent) {
@@ -2499,7 +2499,7 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
             clearInterval(debateInterval);
             return;
         }
-        
+
         // Make the API calls in parallel with the new block range
         const observationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=observation_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
         const considerationUrl = `https://api.sentichain.com/agent/get_reasoning?ticker=${symbol}&summary_type=consideration_public&chunk_start=${startBlock}&chunk_end=${endBlockValue}&api_key=${apiKey}`;
@@ -2621,10 +2621,10 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
 
                     // Reset table tracking variables
                     analystsAtBarTable = [];
-                    
+
                     // Reset task status
                     isTaskInProgress = false;
-                    
+
                     // Set up a continuous wandering behavior for all analysts
                     const wanderTimer = setInterval(() => {
                         // Skip if disconnected
@@ -2632,14 +2632,14 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
                             clearInterval(wanderTimer);
                             return;
                         }
-                        
+
                         // Randomly select an analyst to move
                         const randomAnalyst = people[Math.floor(Math.random() * people.length)];
-                        
+
                         // Only have them wander if they're not already doing something
                         if (randomAnalyst.state === 'idle' && !randomAnalyst.isFetching) {
                             randomAnalyst.wander();
-                            
+
                             // Small chance to speak while wandering
                             if (Math.random() < 0.3) {
                                 const wanderEmojis = [
@@ -2653,20 +2653,20 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
                             }
                         }
                     }, 5000); // Try to move a random analyst every 5 seconds
-                    
+
                     // Add to tracked timers
                     activeTimers.push(wanderTimer);
-                    
+
                     // Schedule interesting place visits
                     scheduleInterestingPlaceVisits();
-                    
+
                     scheduleNextTask();
                 }, 3000); // Wait 3 seconds before wandering
             })
             .catch(error => {
                 // Stop the debate animation
                 clearInterval(debateInterval);
-                
+
                 // Check if we've disconnected or the error is related to disconnection
                 if (!apiConnected || !analysisInProgress || error.name === 'AbortError') {
                     debugLog("Combined analysis error handling cancelled - disconnected");
@@ -2684,7 +2684,7 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
                     person.speak("❌ 📊 ❓");
                     person.wander();
                 }
-                
+
                 // Reset table tracking variables
                 analystsAtBarTable = [];
                 combinedAnalysisStarted = false;
@@ -2703,7 +2703,7 @@ function findNearestWalkablePosition(x, y, maxRadius) {
     if (isWalkable(x, y)) {
         return { x, y };
     }
-    
+
     // Check positions in expanding circles around the target
     for (let r = 1; r <= maxRadius; r++) {
         for (let dx = -r; dx <= r; dx++) {
@@ -2712,7 +2712,7 @@ function findNearestWalkablePosition(x, y, maxRadius) {
                 if (Math.abs(dx) === r || Math.abs(dy) === r) {
                     const testX = x + dx;
                     const testY = y + dy;
-                    
+
                     // Ensure we're in bounds
                     if (testX >= 0 && testX < COLS && testY >= 0 && testY < ROWS) {
                         if (isWalkable(testX, testY)) {
@@ -2723,7 +2723,7 @@ function findNearestWalkablePosition(x, y, maxRadius) {
             }
         }
     }
-    
+
     // If we get here, we couldn't find a walkable position
     // Return a default safe position
     return { x: Math.floor(COLS / 2), y: ROWS - 3 };
@@ -2744,7 +2744,7 @@ function fetchAndDisplayBlockTimestamp(blockNumber) {
         timestampDisplay.style.fontSize = '12px';
         timestampDisplay.style.marginTop = '5px';
         timestampDisplay.style.color = '#00FFC8';
-        
+
         // Insert after the endBlock input
         const endBlockInput = document.getElementById('endBlock');
         if (endBlockInput && endBlockInput.parentNode) {
@@ -2766,7 +2766,7 @@ function fetchAndDisplayBlockTimestamp(blockNumber) {
                 // Convert UTC timestamp to local time
                 const utcDate = new Date(data.timestamp);
                 const localDateString = utcDate.toLocaleString();
-                
+
                 // Update the display with consistent styling
                 timestampDisplay.style.color = '#00FFC8'; // Ensure color is set
                 timestampDisplay.innerHTML = `Block ${blockNumber} timestamp: <span style="color: white">${localDateString}</span> (local time)`;

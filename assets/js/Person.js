@@ -16,7 +16,7 @@ class Person {
         this.facingDirection = 'up';
         this.state = 'idle';
         this.stateTime = 0;
-        
+
         // Add path-related properties
         this.path = [];
         this.pathIndex = 0;
@@ -37,11 +37,11 @@ class Person {
         if (this.x === destX && this.y === destY) {
             return true; // Already at destination
         }
-        
+
         // Find path to destination
         this.path = findPath(this.x, this.y, destX, destY);
         this.pathIndex = 0;
-        
+
         if (this.path.length > 0) {
             this.state = 'walking';
             debugLog(`${this.name} walking to (${destX}, ${destY}), path length: ${this.path.length}`);
@@ -58,31 +58,31 @@ class Person {
         if (this.isFetching || this.state === 'working' || this.state === 'walking') {
             return false;
         }
-        
+
         // Check if recently moved to avoid too frequent movements
         if (this.stateTime < 5) {
             return false;
         }
-        
+
         // Select a random destination within reasonable bounds
         const wanderRadius = 6; // Slightly larger radius to promote more movement
-        
+
         // Try up to 5 times to find a valid destination
         for (let i = 0; i < 5; i++) {
-            const randX = Math.max(1, Math.min(COLS - 2, 
+            const randX = Math.max(1, Math.min(COLS - 2,
                 this.x + Math.floor(Math.random() * wanderRadius * 2) - wanderRadius));
-            const randY = Math.max(1, Math.min(ROWS - 2, 
+            const randY = Math.max(1, Math.min(ROWS - 2,
                 this.y + Math.floor(Math.random() * wanderRadius * 2) - wanderRadius));
-            
+
             // Check if the destination is different from current position
             if (randX === this.x && randY === this.y) {
                 continue;
             }
-            
+
             // Check if the destination is walkable
             if (isWalkable(randX, randY)) {
                 this.setDestination(randX, randY);
-                
+
                 // Small chance to speak emoji when wandering
                 if (Math.random() < 0.3) {
                     const wanderEmojis = [
@@ -94,11 +94,11 @@ class Person {
                     ];
                     this.speak(wanderEmojis[Math.floor(Math.random() * wanderEmojis.length)]);
                 }
-                
+
                 return true;
             }
         }
-        
+
         // Couldn't find a valid destination
         return false;
     }
@@ -680,7 +680,7 @@ class Person {
         // Handle walking state - move along path
         if (this.state === 'walking' && this.path.length > 0 && this.pathIndex < this.path.length) {
             const nextPos = this.path[this.pathIndex];
-            
+
             // Update facing direction based on movement
             if (nextPos.x > this.x) {
                 this.facingDirection = 'right';
@@ -691,12 +691,12 @@ class Person {
             } else if (nextPos.y < this.y) {
                 this.facingDirection = 'up';
             }
-            
+
             // Move to next position
             this.x = nextPos.x;
             this.y = nextPos.y;
             this.pathIndex++;
-            
+
             // Check if we've reached the end of the path
             if (this.pathIndex >= this.path.length) {
                 this.path = [];
@@ -704,7 +704,7 @@ class Person {
                 this.state = 'idle';
                 this.stateTime = 0;
             }
-            
+
             return;
         }
 
@@ -750,7 +750,7 @@ class Person {
                 if (this.stateTime > 15) {
                     this.state = 'idle';
                     this.stateTime = 0;
-                    
+
                     // Chance to wander after working if analysis is completed
                     if (Math.random() < 0.7 && analysisCompleted) {
                         this.wander();
@@ -774,14 +774,14 @@ class Person {
         debugLog(`${this.name} joining collaborative analysis`);
         this.isFetching = true;
         this.speak("Let's put together our analysis!");
-        
+
         // Get position near the center of the office (bar table)
         const tableCenterX = Math.floor(COLS / 2);
         const tableCenterY = Math.floor(ROWS / 2);
-        
+
         // Don't set a specific path here - the updated performCombinedAnalysis
         // will handle setting paths for all analysts to ensure they're properly positioned
-        
+
         this.state = 'working';
         // Don't update sync status here, as the main function handles this
     }
@@ -843,7 +843,7 @@ class Person {
                 debugLog(`${this.name} post-reasoning cleanup aborted - disconnected`);
                 return;
             }
-            
+
             debugLog(`${this.name} done fetching reasoning`);
             this.isFetching = false;
             currentFetchingTicker = null;
