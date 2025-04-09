@@ -5,7 +5,6 @@ const GRID_SIZE = 30;
 const COLS = Math.floor(canvas.width / GRID_SIZE);
 const ROWS = Math.floor(canvas.height / GRID_SIZE);
 const ANIMATION_SPEED = 500;
-const REASONING_DISPLAY_TIME = 5000;
 
 const CHAIN_LENGTH_API = "https://api.sentichain.com/blockchain/get_chain_length?network=mainnet";
 const REASONING_API_BASE = "https://api.sentichain.com/agent/get_reasoning_match_chunk_end?summary_type=observation_public&user_chunk_end=";
@@ -385,7 +384,6 @@ function update() {
     for (const person of people) {
         person.update();
     }
-    dog.update();
 }
 
 function animate() {
@@ -1288,16 +1286,12 @@ function updateTerminalDisplay() {
     if (currentFetchingTicker) {
         const person = people.find(p => p.ticker.toLowerCase() === currentFetchingTicker);
         if (person && person.isFetching) {
-            if (person.reasoningText) {
-                const timestamp = new Date().toLocaleTimeString();
-            } else {
-                const analysisContent = getDetailedAnalysisContent(currentFetchingTicker);
-                terminalContent.innerHTML = analysisContent;
-            }
+            const analysisContent = getDetailedAnalysisContent(currentFetchingTicker);
+            terminalContent.innerHTML = analysisContent;
             return;
         }
     }
-
+    
     // If we have combined analysis results, show them
     if (combinedAnalysisResults) {
         terminalContent.innerHTML = combinedAnalysisResults;
