@@ -240,6 +240,27 @@ body {
     white-space: pre-line;
 }
 
+/* Custom scrollbar styling for terminal content */
+#terminalContent::-webkit-scrollbar {
+    width: 10px;
+}
+
+#terminalContent::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#terminalContent::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Firefox scrollbar styling */
+#terminalContent {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
 #branding {
     font-size: 2.0em;
     font-weight: bold;
