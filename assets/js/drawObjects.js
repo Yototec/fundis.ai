@@ -358,7 +358,7 @@ function drawOffice() {
                             // Now draw the colored strips for the left edge
                             
                             // Red strip - TOP section (full left edge)
-                            ctx.fillStyle = '#FF0000'; // Red
+                            ctx.fillStyle = '#6B4226'; // Dark wood color
                             ctx.fillRect(
                                 cellX - GRID_SIZE/2, // Exact left edge
                                 cellY - GRID_SIZE + 3, // Top of door
@@ -367,7 +367,7 @@ function drawOffice() {
                             );
                             
                             // Yellow strip - MIDDLE section (full left edge)
-                            ctx.fillStyle = '#FFFF00'; // Yellow
+                            ctx.fillStyle = '#6B4226'; // Dark wood color
                             ctx.fillRect(
                                 cellX - GRID_SIZE/2, // Exact left edge
                                 cellY, // Top of middle section
@@ -376,7 +376,7 @@ function drawOffice() {
                             );
                             
                             // Blue strip - BOTTOM section (full left edge)
-                            ctx.fillStyle = '#0000FF'; // Blue
+                            ctx.fillStyle = '#6B4226'; // Dark wood color
                             ctx.fillRect(
                                 cellX - GRID_SIZE/2, // Exact left edge
                                 cellY + GRID_SIZE, // Top of bottom section
