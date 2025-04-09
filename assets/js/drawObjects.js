@@ -289,6 +289,183 @@ function drawOffice() {
                     }
                     break;
 
+                case OBJECTS.DOOR:
+                    // Get position relative to middle of door
+                    const middleY = Math.floor(ROWS / 2);
+                    const doorY = Math.floor(cellY / GRID_SIZE);
+                    const doorSection = doorY === middleY ? 'middle' : 
+                                        doorY === middleY - 1 ? 'top' : 'bottom';
+                    
+                    // Door frame - Only draw the side frames, not top/bottom for middle sections
+                    ctx.fillStyle = COLORS.wall;
+                    
+                    // Fill the entire cell first
+                    ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);
+                    
+                    if (isDoorOpen) {
+                        // Door opening (empty space showing outside)
+                        ctx.fillStyle = '#8B95A2'; // Light grayish blue for outside
+                        
+                        // Different rendering based on section to create a continuous door
+                        if (doorSection === 'top') {
+                            // Top section - draw the top frame and sides only
+                            ctx.fillRect(cellX + 3, cellY + 3, GRID_SIZE - 6, GRID_SIZE);
+                        } else if (doorSection === 'middle') {
+                            // Middle section - draw just the sides, continuous with top and bottom
+                            ctx.fillRect(cellX + 3, cellY, GRID_SIZE - 6, GRID_SIZE);
+                        } else { // bottom section
+                            // Bottom section - draw the bottom frame and sides only
+                            ctx.fillRect(cellX + 3, cellY, GRID_SIZE - 6, GRID_SIZE - 3);
+                        }
+                        
+                        // Only draw the door itself on the middle section
+                        if (doorSection === 'middle') {
+                            // Door itself (shown open)
+                            ctx.fillStyle = COLORS.door;
+                            
+                            // Door is hinged on the left side and open outward
+                            ctx.beginPath();
+                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE + 3); // Top-left of door frame (extended up)
+                            ctx.lineTo(cellX + 3, cellY + GRID_SIZE * 2 - 3); // Bottom-left of door frame (extended down)
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE * 2 - 3); // Bottom corner of opened door
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE + 3); // Top corner of opened door
+                            ctx.closePath();
+                            ctx.fill();
+                            
+                            // Door handle
+                            ctx.fillStyle = '#B8860B'; // Darker golden color for handle
+                            ctx.beginPath();
+                            ctx.arc(cellX - GRID_SIZE/4, cellY + GRID_SIZE/2, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            // Add some detail to the door
+                            ctx.strokeStyle = '#6B4226'; // Darker wood tone
+                            ctx.lineWidth = 1;
+                            
+                            // Horizontal detail lines on the door - span all three door sections
+                            ctx.beginPath();
+                            // Top section line
+                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE/2);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE/2);
+                            // Middle section lines
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE/3);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE/3);
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE*2/3);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE*2/3);
+                            // Bottom section line
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE*3/2);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE*3/2);
+                            ctx.stroke();
+                            
+                            // Door edge line - span all three sections
+                            ctx.beginPath();
+                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE + 3);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE + 3);
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE * 2 - 3);
+                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE * 2 - 3);
+                            ctx.stroke();
+                        }
+                    } else {
+                        // Closed door
+                        ctx.fillStyle = COLORS.door;
+                        
+                        // Different rendering based on section to create a continuous door
+                        if (doorSection === 'top') {
+                            // Top section - draw the top frame and sides only
+                            ctx.fillRect(cellX + 3, cellY + 3, GRID_SIZE - 6, GRID_SIZE);
+                        } else if (doorSection === 'middle') {
+                            // Middle section - draw just the sides, continuous with top and bottom
+                            ctx.fillRect(cellX + 3, cellY, GRID_SIZE - 6, GRID_SIZE);
+                        } else { // bottom section
+                            // Bottom section - draw the bottom frame and sides only
+                            ctx.fillRect(cellX + 3, cellY, GRID_SIZE - 6, GRID_SIZE - 3);
+                        }
+                        
+                        // Only draw handle on the middle section
+                        if (doorSection === 'middle') {
+                            // Door handle
+                            ctx.fillStyle = '#B8860B'; // Darker golden color for handle
+                            ctx.beginPath();
+                            ctx.arc(cellX + GRID_SIZE - 10, cellY + GRID_SIZE/2, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        // Add horizontal detail lines to the door - only if not overlapping with frames
+                        ctx.strokeStyle = '#6B4226'; // Darker wood tone
+                        ctx.lineWidth = 1;
+                        
+                        // Draw appropriate detail lines for each section
+                        ctx.beginPath();
+                        if (doorSection === 'top') {
+                            // Top section line
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE/2);
+                            ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE/2);
+                        } else if (doorSection === 'middle') {
+                            // Middle section lines
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE/3);
+                            ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE/3);
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE*2/3);
+                            ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE*2/3);
+                        } else { // bottom section
+                            // Bottom section line
+                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE/2);
+                            ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE/2);
+                        }
+                        ctx.stroke();
+                    }
+                    
+                    // Draw the door frames
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    
+                    // Draw different parts of the frame based on position to create a continuous look
+                    if (doorSection === 'top') {
+                        // Top section - top and sides of frame only
+                        ctx.beginPath();
+                        ctx.moveTo(cellX + 3, cellY + 3);
+                        ctx.lineTo(cellX + GRID_SIZE - 3, cellY + 3);
+                        ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE);
+                        ctx.moveTo(cellX + 3, cellY + 3);
+                        ctx.lineTo(cellX + 3, cellY + GRID_SIZE);
+                        ctx.stroke();
+                    } else if (doorSection === 'middle') {
+                        // Middle section - only sides of frame
+                        ctx.beginPath();
+                        ctx.moveTo(cellX + 3, cellY);
+                        ctx.lineTo(cellX + 3, cellY + GRID_SIZE);
+                        ctx.moveTo(cellX + GRID_SIZE - 3, cellY);
+                        ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE);
+                        ctx.stroke();
+                    } else { // bottom section
+                        // Bottom section - bottom and sides of frame only
+                        ctx.beginPath();
+                        ctx.moveTo(cellX + 3, cellY);
+                        ctx.lineTo(cellX + 3, cellY + GRID_SIZE - 3);
+                        ctx.lineTo(cellX + GRID_SIZE - 3, cellY + GRID_SIZE - 3);
+                        ctx.lineTo(cellX + GRID_SIZE - 3, cellY);
+                        ctx.stroke();
+                    }
+                    
+                    // Add a subtle indicator that the door is interactive
+                    // Only on the middle section
+                    if (doorSection === 'middle') {
+                        // Pulsing effect based on time
+                        const time = Date.now() / 1000;
+                        const pulseStrength = (Math.sin(time * 2) + 1) / 2 * 0.5; // Value between 0 and 0.5
+                        
+                        ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + pulseStrength})`;
+                        ctx.beginPath();
+                        if (isDoorOpen) {
+                            // Glow on the handle when open
+                            ctx.arc(cellX - GRID_SIZE/4, cellY + GRID_SIZE/2, 4, 0, Math.PI * 2);
+                        } else {
+                            // Glow on the handle when closed
+                            ctx.arc(cellX + GRID_SIZE - 10, cellY + GRID_SIZE/2, 4, 0, Math.PI * 2);
+                        }
+                        ctx.fill();
+                    }
+                    break;
+
                 case OBJECTS.DESK:
                     ctx.fillStyle = COLORS.desk;
                     ctx.fillRect(cellX, cellY, GRID_SIZE, GRID_SIZE);

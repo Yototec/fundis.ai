@@ -18,7 +18,8 @@ const OBJECTS = {
     CARPET: 7,
     WINDOW: 8,
     TABLE: 11,
-    BAR_TABLE: 12
+    BAR_TABLE: 12,
+    DOOR: 13
 };
 
 const COLORS = {
@@ -37,7 +38,8 @@ const COLORS = {
     quantUniform: '#C3A634',
     window: '#add8e6',
     sky: '#87CEEB',
-    cloud: '#ffffff'
+    cloud: '#ffffff',
+    door: '#A0522D'
 };
 
 let apiConnected = false;
@@ -86,6 +88,9 @@ let analysisInProgress = false;
 let analystsAtBarTable = [];
 let combinedAnalysisStarted = false;
 
+// Door state tracking
+let isDoorOpen = false;
+
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
     const gridHeightPx = ROWS * GRID_SIZE;
@@ -110,6 +115,12 @@ function initOffice() {
             }
         }
     }
+
+    // Add a single door on the left wall in the middle
+    const middleY = Math.floor(ROWS / 2);
+    office[middleY - 1][0] = OBJECTS.DOOR; // Top part of the door
+    office[middleY][0] = OBJECTS.DOOR;     // Middle part of the door
+    office[middleY + 1][0] = OBJECTS.DOOR; // Bottom part of the door
 
     for (let x = 3; x < COLS - 3; x += 3) {
         office[0][x] = OBJECTS.WINDOW;
@@ -196,6 +207,16 @@ function initOffice() {
 
         let clickedOnAnalyst = false;
 
+        // Check if clicked on the door (any part of it)
+        const middleY = Math.floor(ROWS / 2);
+        if (clickX === 0 && (clickY === middleY - 1 || clickY === middleY || clickY === middleY + 1)) {
+            // Toggle door state
+            isDoorOpen = !isDoorOpen;
+            // Force a redraw to show the door's new state
+            requestAnimationFrame(draw);
+            return;
+        }
+
         // Check if clicked on an analyst
         for (const person of people) {
             if (person.x === clickX && person.y === clickY) {
@@ -246,7 +267,8 @@ function isWalkable(x, y) {
         office[y][x] === OBJECTS.COMPUTER ||
         office[y][x] === OBJECTS.TABLE ||
         office[y][x] === OBJECTS.BAR_TABLE ||
-        office[y][x] === OBJECTS.COFFEE
+        office[y][x] === OBJECTS.COFFEE ||
+        (office[y][x] === OBJECTS.DOOR && !isDoorOpen) // Door is only walkable when open
     ) {
         return false;
     }
