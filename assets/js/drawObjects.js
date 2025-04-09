@@ -321,16 +321,33 @@ function drawOffice() {
                         // Only draw the door itself on the middle section
                         if (doorSection === 'middle') {
                             // Door itself (shown open)
+                            // Draw the main door body first (without the colored left edge)
                             ctx.fillStyle = COLORS.door;
                             
-                            // Door is hinged on the left side and open outward
-                            ctx.beginPath();
-                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE + 3); // Top-left of door frame (extended up)
-                            ctx.lineTo(cellX + 3, cellY + GRID_SIZE * 2 - 3); // Bottom-left of door frame (extended down)
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE * 2 - 3); // Bottom corner of opened door
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE + 3); // Top corner of opened door
-                            ctx.closePath();
-                            ctx.fill();
+                            // Draw the door without the left edge (we'll cover that with colored strips)
+                            // Top section
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2 + 4, // Left edge + 4px offset for the colored strip
+                                cellY - GRID_SIZE + 3, 
+                                GRID_SIZE/2 - 7, 
+                                GRID_SIZE - 3
+                            );
+                            
+                            // Middle section
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2 + 4,
+                                cellY,
+                                GRID_SIZE/2 - 7,
+                                GRID_SIZE
+                            );
+                            
+                            // Bottom section
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2 + 4,
+                                cellY + GRID_SIZE,
+                                GRID_SIZE/2 - 7,
+                                GRID_SIZE - 3
+                            );
                             
                             // Door handle
                             ctx.fillStyle = '#B8860B'; // Darker golden color for handle
@@ -338,32 +355,34 @@ function drawOffice() {
                             ctx.arc(cellX - GRID_SIZE/4, cellY + GRID_SIZE/2, 2, 0, Math.PI * 2);
                             ctx.fill();
                             
-                            // Add some detail to the door
-                            ctx.strokeStyle = '#6B4226'; // Darker wood tone
-                            ctx.lineWidth = 1;
+                            // Now draw the colored strips for the left edge
                             
-                            // Horizontal detail lines on the door - span all three door sections
-                            ctx.beginPath();
-                            // Top section line
-                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE/2);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE/2);
-                            // Middle section lines
-                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE/3);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE/3);
-                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE*2/3);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE*2/3);
-                            // Bottom section line
-                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE*3/2);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE*3/2);
-                            ctx.stroke();
+                            // Red strip - TOP section (full left edge)
+                            ctx.fillStyle = '#FF0000'; // Red
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2, // Exact left edge
+                                cellY - GRID_SIZE + 3, // Top of door
+                                4, // Width of strip
+                                GRID_SIZE - 3 // Height of top section
+                            );
                             
-                            // Door edge line - span all three sections
-                            ctx.beginPath();
-                            ctx.moveTo(cellX + 3, cellY - GRID_SIZE + 3);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY - GRID_SIZE + 3);
-                            ctx.moveTo(cellX + 3, cellY + GRID_SIZE * 2 - 3);
-                            ctx.lineTo(cellX - GRID_SIZE/2, cellY + GRID_SIZE * 2 - 3);
-                            ctx.stroke();
+                            // Yellow strip - MIDDLE section (full left edge)
+                            ctx.fillStyle = '#FFFF00'; // Yellow
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2, // Exact left edge
+                                cellY, // Top of middle section
+                                4, // Width of strip
+                                GRID_SIZE // Height of middle section
+                            );
+                            
+                            // Blue strip - BOTTOM section (full left edge)
+                            ctx.fillStyle = '#0000FF'; // Blue
+                            ctx.fillRect(
+                                cellX - GRID_SIZE/2, // Exact left edge
+                                cellY + GRID_SIZE, // Top of bottom section
+                                4, // Width of strip
+                                GRID_SIZE - 3 // Height of bottom section
+                            );
                         }
                     } else {
                         // Closed door
