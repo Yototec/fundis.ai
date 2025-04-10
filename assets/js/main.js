@@ -258,12 +258,17 @@ function initOffice() {
                 
                 // Make Fundis walk towards the clicked analyst if it's not Fundis itself
                 if (person.ticker.toLowerCase() !== 'fundis' && fundisAgent) {
-                    // Find a position next to the clicked analyst
+                    // Find positions with 1 block social distance from the clicked analyst
                     const positions = [
-                        { x: person.x - 1, y: person.y }, // Left
-                        { x: person.x + 1, y: person.y }, // Right
-                        { x: person.x, y: person.y - 1 }, // Above
-                        { x: person.x, y: person.y + 1 }  // Below
+                        { x: person.x - 2, y: person.y }, // 2 blocks Left
+                        { x: person.x + 2, y: person.y }, // 2 blocks Right
+                        { x: person.x, y: person.y - 2 }, // 2 blocks Above
+                        { x: person.x, y: person.y + 2 }, // 2 blocks Below
+                        // Diagonal positions for more options
+                        { x: person.x - 2, y: person.y - 2 }, // Diagonally upper-left
+                        { x: person.x + 2, y: person.y - 2 }, // Diagonally upper-right
+                        { x: person.x - 2, y: person.y + 2 }, // Diagonally lower-left
+                        { x: person.x + 2, y: person.y + 2 }  // Diagonally lower-right
                     ];
                     
                     // Find the first walkable position
@@ -275,7 +280,7 @@ function initOffice() {
                         }
                     }
                     
-                    // If no position directly adjacent is available, find nearest walkable position
+                    // If no position with social distance is available, find nearest walkable position
                     if (!targetPos) {
                         targetPos = findNearestWalkablePosition(person.x, person.y, 3);
                     }
@@ -290,11 +295,11 @@ function initOffice() {
                         
                         fundisAgent.animationState = 'walking';
                         fundisAgent.setDestination(targetPos.x, targetPos.y);
-                        fundisAgent.speak(`Let me help you with ${person.name}'s analysis!`);
+                        fundisAgent.speak(`Let me help you with ${person.name}'s analysis! (social distancing)👍`);
                         
                         // Have the analyst acknowledge Fundis
                         setTimeout(() => {
-                            person.speak("👋 📊");
+                            person.speak("👋 📊 Thanks for keeping distance!");
                         }, 1000);
                     }
                 }

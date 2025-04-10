@@ -92,8 +92,35 @@ class Fundis extends Person {
                     this.animationState = 'idle';
                     this.delayCounter = 0;
                     
-                    // Don't automatically return to door - stay with the analyst
-                    // until user clicks on another analyst
+                    // Find the nearest analyst and face them
+                    let nearestAnalyst = null;
+                    let shortestDistance = Infinity;
+                    
+                    for (const person of people) {
+                        // Skip Fundis itself
+                        if (person.ticker.toLowerCase() === 'fundis') continue;
+                        
+                        // Calculate Manhattan distance
+                        const distance = Math.abs(this.x - person.x) + Math.abs(this.y - person.y);
+                        
+                        // If this agent is closer than the current nearest
+                        if (distance < shortestDistance) {
+                            shortestDistance = distance;
+                            nearestAnalyst = person;
+                        }
+                    }
+                    
+                    // If we found a nearby analyst, face them
+                    if (nearestAnalyst) {
+                        // Determine facing direction based on relative position
+                        if (Math.abs(this.x - nearestAnalyst.x) > Math.abs(this.y - nearestAnalyst.y)) {
+                            // Horizontal difference is greater, face left or right
+                            this.facingDirection = this.x < nearestAnalyst.x ? 'right' : 'left';
+                        } else {
+                            // Vertical difference is greater, face up or down
+                            this.facingDirection = this.y < nearestAnalyst.y ? 'down' : 'up';
+                        }
+                    }
                 }
                 break;
                 
