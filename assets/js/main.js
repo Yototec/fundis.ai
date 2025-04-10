@@ -181,10 +181,17 @@ function initOffice() {
 
     // Create the Fundis agent at the door
     fundisAgent = new Fundis();
+    
+    // Ensure Fundis is placed outside the door
+    fundisAgent.x = -1;
+    fundisAgent.y = Math.floor(ROWS / 2);
+    fundisAgent.animationState = 'waiting';
+    
+    // Add Fundis to the people array
     people.push(fundisAgent);
     
-    // Set door to open initially to allow Fundis to enter
-    isDoorOpen = true;
+    // Door starts closed - Fundis animation will control door opening/closing
+    isDoorOpen = false;
 
     // Add tab switching functionality for mobile
     const tabButtons = document.querySelectorAll('.tab-button');

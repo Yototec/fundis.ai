@@ -2,20 +2,28 @@ class Fundis extends Person {
     constructor() {
         // Get the middle Y position of the door
         const middleY = Math.floor(ROWS / 2);
-        // Position just inside the door
-        const doorX = 1;
+        // Position completely outside and not visible
+        const doorX = -10; // Far outside so not visible at all
         
         // Call parent constructor with position, name, and "fundis" as ticker (for styling)
         super(doorX, middleY, "Fundis", "fundis");
+        
+        // Override desk position to prevent automatic movement to desk
+        this.desk = { x: 1, y: middleY };
         
         // Custom properties for Fundis agent
         this.uniformColor = '#4B0082'; // Indigo color for Fundis uniform
         this.isGreeter = true;
         this.hasGreeted = false;
-        this.messageTime = 20; // Make initial message stay longer
+        this.messageTime = 0;
         
-        // Initial message
-        this.speak("Welcome to Fundis.AI! 👋");
+        // Animation sequence properties
+        this.animationState = 'waiting';
+        this.animationDelay = 2; // About 1 second
+        this.delayCounter = 0;
+        
+        // Always face right
+        this.facingDirection = 'right';
     }
     
     // Override update method to have custom behavior
@@ -25,20 +33,79 @@ class Fundis extends Person {
             this.messageTime--;
         }
         
-        // Always stay by the door
-        if (this.x !== 1 || this.y !== Math.floor(ROWS / 2)) {
-            this.setDestination(1, Math.floor(ROWS / 2));
+        // Handle animation sequence
+        switch (this.animationState) {
+            case 'waiting':
+                // Keep Fundis completely hidden during this phase
+                this.x = -10;
+                this.y = Math.floor(ROWS / 2);
+                
+                // Wait a bit before starting the entrance animation
+                this.delayCounter++;
+                if (this.delayCounter >= this.animationDelay) {
+                    // Start the animation by opening the door
+                    isDoorOpen = true;
+                    this.animationState = 'entering';
+                    this.delayCounter = 0;
+                    // Force a redraw to show the open door
+                    requestAnimationFrame(draw);
+                }
+                break;
+                
+            case 'entering':
+                // Door is now open, wait briefly
+                this.delayCounter++;
+                if (this.delayCounter >= 2) { // About 1 second
+                    // Appear directly inside the door
+                    this.x = 1;
+                    this.y = Math.floor(ROWS / 2);
+                    this.animationState = 'speaking';
+                    this.speak("Welcome to Fundis.AI! 👋");
+                    this.delayCounter = 0;
+                }
+                break;
+                
+            case 'speaking':
+                // Wait while the welcome message is displayed
+                this.delayCounter++;
+                if (this.delayCounter >= 2) { // About 1 second
+                    // Close the door behind
+                    isDoorOpen = false;
+                    this.animationState = 'idle';
+                    // Force a redraw to show the closed door
+                    requestAnimationFrame(draw);
+                }
+                break;
+                
+            case 'idle':
+                // Always stay by the door
+                if (this.x !== 1 || this.y !== Math.floor(ROWS / 2)) {
+                    this.x = 1;
+                    this.y = Math.floor(ROWS / 2);
+                }
+                
+                // Always face inward (to the right)
+                this.facingDirection = 'right';
+                
+                // Perform greeting if not yet done
+                if (!this.hasGreeted && this.messageTime === 0) {
+                    this.speak("I'm Fundis, your AI assistant. Click on analysts to see their work!");
+                    this.hasGreeted = true;
+                    this.messageTime = 20;
+                }
+                break;
+        }
+    }
+    
+    // Override draw method to skip drawing when outside
+    draw() {
+        // Don't draw Fundis at all if in waiting state or positioned far outside
+        if (this.x < 0) {
+            return;
         }
         
-        // Always face inward (to the right)
-        this.facingDirection = 'right';
-        
-        // Perform greeting if not yet done
-        if (!this.hasGreeted && this.messageTime === 0) {
-            this.speak("I'm Fundis, your AI assistant. Click on analysts to see their work!");
-            this.hasGreeted = true;
-            this.messageTime = 20;
-        }
+        // For all other cases, use the normal drawing
+        super.draw();
     }
     
     // Override drawTickerLogo to use custom Fundis logo
