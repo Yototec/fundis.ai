@@ -224,6 +224,7 @@ function initOffice() {
         const clickY = Math.floor((e.clientY - rect.top) / GRID_SIZE);
 
         let clickedOnAnalyst = false;
+        let clickedAnalyst = null;
 
         // Check if clicked on the door (any part of it)
         const middleY = Math.floor(ROWS / 2);
@@ -239,6 +240,7 @@ function initOffice() {
         for (const person of people) {
             if (person.x === clickX && person.y === clickY) {
                 clickedOnAnalyst = true;
+                clickedAnalyst = person;
 
                 // Only show analyst data if analysis is completed
                 if (analysisCompleted) {
@@ -253,6 +255,50 @@ function initOffice() {
                         }
                     }
                 }
+                
+                // Make Fundis walk towards the clicked analyst if it's not Fundis itself
+                if (person.ticker.toLowerCase() !== 'fundis' && fundisAgent) {
+                    // Find a position next to the clicked analyst
+                    const positions = [
+                        { x: person.x - 1, y: person.y }, // Left
+                        { x: person.x + 1, y: person.y }, // Right
+                        { x: person.x, y: person.y - 1 }, // Above
+                        { x: person.x, y: person.y + 1 }  // Below
+                    ];
+                    
+                    // Find the first walkable position
+                    let targetPos = null;
+                    for (const pos of positions) {
+                        if (isWalkable(pos.x, pos.y)) {
+                            targetPos = pos;
+                            break;
+                        }
+                    }
+                    
+                    // If no position directly adjacent is available, find nearest walkable position
+                    if (!targetPos) {
+                        targetPos = findNearestWalkablePosition(person.x, person.y, 3);
+                    }
+                    
+                    // Set Fundis to walk to that position
+                    if (targetPos) {
+                        // If Fundis is already walking, interrupt the current path
+                        if (fundisAgent.state === 'walking') {
+                            fundisAgent.path = [];
+                            fundisAgent.pathIndex = 0;
+                        }
+                        
+                        fundisAgent.animationState = 'walking';
+                        fundisAgent.setDestination(targetPos.x, targetPos.y);
+                        fundisAgent.speak(`Let me help you with ${person.name}'s analysis!`);
+                        
+                        // Have the analyst acknowledge Fundis
+                        setTimeout(() => {
+                            person.speak("👋 📊");
+                        }, 1000);
+                    }
+                }
+                
                 break;
             }
         }
@@ -2441,9 +2487,9 @@ function scheduleInterestingPlaceVisits() {
             return;
         }
 
-        // Pick a random analyst who isn't busy
+        // Pick a random analyst who isn't busy and isn't Fundis
         const availableAnalysts = people.filter(p =>
-            p.state !== 'walking' && !p.isFetching);
+            p.state !== 'walking' && !p.isFetching && p.ticker.toLowerCase() !== 'fundis');
 
         if (availableAnalysts.length === 0) return;
 
@@ -2642,6 +2688,9 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
                 setTimeout(() => {
                     // Have all analysts wander randomly
                     for (const person of people) {
+                        // Skip Fundis - it should not wander
+                        if (person.ticker.toLowerCase() === 'fundis') continue;
+                        
                         person.isFetching = false;
                         person.facingTableCenter = false;
                         person.state = 'idle';
@@ -2667,8 +2716,15 @@ function startCollaborativeDebate(symbol, apiKey, startBlock, endBlockValue) {
                             return;
                         }
 
-                        // Randomly select an analyst to move
-                        const randomAnalyst = people[Math.floor(Math.random() * people.length)];
+                        // Randomly select an analyst to move (excluding Fundis)
+                        const availableAnalysts = people.filter(p => 
+                            p.ticker.toLowerCase() !== 'fundis' && 
+                            p.state === 'idle' && 
+                            !p.isFetching);
+                            
+                        if (availableAnalysts.length === 0) return;
+                        
+                        const randomAnalyst = availableAnalysts[Math.floor(Math.random() * availableAnalysts.length)];
 
                         // Only have them wander if they're not already doing something
                         if (randomAnalyst.state === 'idle' && !randomAnalyst.isFetching) {

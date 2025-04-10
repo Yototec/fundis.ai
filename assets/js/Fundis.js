@@ -24,6 +24,12 @@ class Fundis extends Person {
         
         // Always face right
         this.facingDirection = 'right';
+        
+        // Override wander method to prevent Fundis from wandering
+        this.wander = function() {
+            // Do nothing - Fundis doesn't wander
+            return false;
+        };
     }
     
     // Override update method to have custom behavior
@@ -77,22 +83,38 @@ class Fundis extends Person {
                 }
                 break;
                 
+            case 'walking':
+                // Use the parent class walking behavior
+                super.update();
+                
+                // If we've reached our destination, go back to idle state
+                if (this.state !== 'walking') {
+                    this.animationState = 'idle';
+                    this.delayCounter = 0;
+                    
+                    // Don't automatically return to door - stay with the analyst
+                    // until user clicks on another analyst
+                }
+                break;
+                
             case 'idle':
-                // Always stay by the door
-                if (this.x !== 1 || this.y !== Math.floor(ROWS / 2)) {
-                    this.x = 1;
-                    this.y = Math.floor(ROWS / 2);
+                // If Fundis is walking, use parent update method
+                if (this.state === 'walking') {
+                    super.update();
+                } 
+                // If idle by the door, ensure proper positioning and greeting
+                else if (this.x === 1 && this.y === Math.floor(ROWS / 2) && !this.hasGreeted) {
+                    // Always face inward (to the right) when at the door
+                    this.facingDirection = 'right';
+                    
+                    // Perform greeting if not yet done
+                    if (this.messageTime === 0) {
+                        this.speak("I'm Fundis, your AI assistant. Click on analysts to see their work!");
+                        this.hasGreeted = true;
+                        this.messageTime = 20;
+                    }
                 }
-                
-                // Always face inward (to the right)
-                this.facingDirection = 'right';
-                
-                // Perform greeting if not yet done
-                if (!this.hasGreeted && this.messageTime === 0) {
-                    this.speak("I'm Fundis, your AI assistant. Click on analysts to see their work!");
-                    this.hasGreeted = true;
-                    this.messageTime = 20;
-                }
+                // No longer automatically return to door - stay where we are
                 break;
         }
     }
