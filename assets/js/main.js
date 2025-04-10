@@ -36,6 +36,7 @@ const COLORS = {
     sentimentUniform: '#627EEA',
     marketUniform: '#00FFA3',
     quantUniform: '#C3A634',
+    fundisUniform: '#4B0082', // Added Fundis uniform color
     window: '#add8e6',
     sky: '#87CEEB',
     cloud: '#ffffff',
@@ -90,6 +91,9 @@ let combinedAnalysisStarted = false;
 
 // Door state tracking
 let isDoorOpen = false;
+
+// Add this near the top with other global variable declarations
+let fundisAgent = null;
 
 function updateCanvasSize() {
     const gridWidthPx = COLS * GRID_SIZE;
@@ -174,6 +178,13 @@ function initOffice() {
         new Person(deskPositions.market.x, deskPositions.market.y, 'Market Analyst', 'market'),
         new Person(deskPositions.quant.x, deskPositions.quant.y, 'Quant Analyst', 'quant')
     ];
+
+    // Create the Fundis agent at the door
+    fundisAgent = new Fundis();
+    people.push(fundisAgent);
+    
+    // Set door to open initially to allow Fundis to enter
+    isDoorOpen = true;
 
     // Add tab switching functionality for mobile
     const tabButtons = document.querySelectorAll('.tab-button');
